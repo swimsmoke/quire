@@ -1,0 +1,15 @@
+[package]
+name = "qusd-token"
+version = "0.1.0"
+edition = "2021"
+description = "qUSD — TESTNET-ONLY collateral token for Quire, with a rate-limited faucet and an owner-only bridge mint"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = { workspace = true }
+near-contract-standards = { workspace = true }
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

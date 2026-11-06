@@ -1,0 +1,15 @@
+[package]
+name = "quire-market"
+version = "0.1.0"
+edition = "2021"
+description = "Quire perpetual FPMM truth markets"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = { workspace = true }
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
+serde_json = "1"

@@ -1,0 +1,52 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+      - name: Unit tests (incl. TS<->Rust FPMM vectors)
+        run: cd contracts && cargo test
+      - name: Install cargo-near
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+      - name: Build wasm
+        run: chmod +x contracts/build.sh && contracts/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contracts-wasm
+          path: contracts/res/*.wasm
+
+  typescript:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: quire
+          POSTGRES_PASSWORD: quire
+          POSTGRES_DB: quire_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U quire" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://quire:quire@localhost:5432/quire_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quire/api exec prisma migrate deploy
+      - run: pnpm typecheck
+      - run: pnpm test

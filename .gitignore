@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.env
+.env.local
+*.log
+contracts/target
+contracts/res/*.wasm
+coverage
+.turbo
+.DS_Store
+# never commit keys
+*.key.json
+.near-credentials

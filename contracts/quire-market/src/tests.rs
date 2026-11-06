@@ -1,0 +1,433 @@
+use super::*;
+use near_sdk::test_utils::{accounts, VMContextBuilder};
+use near_sdk::{testing_env, NearToken};
+
+const Q: u128 = 1_000_000; // 1 qUSD
+const STORAGE: NearToken = NearToken::from_millinear(50); // 0.05 NEAR
+
+fn token() -> AccountId {
+    "qusd.testnet".parse().unwrap()
+}
+fn owner() -> AccountId {
+    accounts(0)
+}
+fn alice() -> AccountId {
+    accounts(1)
+}
+fn bob() -> AccountId {
+    accounts(2)
+}
+fn agent() -> AccountId {
+    "agent.alice.testnet".parse().unwrap()
+}
+
+fn ctx(predecessor: AccountId, deposit: NearToken, ts: u64) {
+    let mut b = VMContextBuilder::new();
+    b.current_account_id("quire.testnet".parse().unwrap())
+        .predecessor_account_id(predecessor)
+        .attached_deposit(deposit)
+        .block_timestamp(ts);
+    testing_env!(b.build());
+}
+fn as_user(a: AccountId) {
+    ctx(a, NearToken::from_yoctonear(1), 0)
+}
+fn as_view(a: AccountId) {
+    ctx(a, NearToken::from_yoctonear(0), 0)
+}
+
+fn register(c: &mut QuireMarket, a: AccountId) {
+    ctx(a.clone(), STORAGE, 0);
+    c.storage_deposit(None);
+}
+fn deposit(c: &mut QuireMarket, a: AccountId, amount: u128) {
+    ctx(token(), NearToken::from_yoctonear(0), 0);
+    let r = c.ft_on_transfer(a, U128(amount), String::new());
+    match r {
+        PromiseOrValue::Value(v) => assert_eq!(v.0, 0, "deposit refunded"),
+        _ => panic!("unexpected promise"),
+    }
+}
+
+fn setup() -> QuireMarket {
+    ctx(owner(), NearToken::from_yoctonear(0), 0);
+    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000));
+    register(&mut c, owner());
+    deposit(&mut c, owner(), 100_000 * Q);
+    for u in [alice(), bob()] {
+        register(&mut c, u.clone());
+        deposit(&mut c, u, 1_000 * Q);
+    }
+    as_view(owner());
+    c.create_market("btc-150k".into(), "Will Bitcoin exceed $150,000?".into(), "crypto".into(), U128(400_000), U128(10_000 * Q), 100);
+    c
+}
+
+/// Sum of all YES/NO shares (pool + holders) must equal sets.
+fn assert_solvent(c: &QuireMarket, holders: &[AccountId]) {
+    let m = c.get_market(0).unwrap();
+    let (mut y, mut n) = (m.pool_yes.0, m.pool_no.0);
+    for h in holders {
+        let p = c.get_position(0, h.clone());
+        y += p.yes.0;
+        n += p.no.0;
+    }
+    assert_eq!(y, m.sets.0, "YES supply != sets");
+    assert_eq!(n, m.sets.0, "NO supply != sets");
+}
+
+// ---------- cross-implementation vectors ----------
+
+#[derive(near_sdk::serde::Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+struct Vector {
+    kind: String,
+    ok: bool,
+    liquidity: Option<String>,
+    prob_ppm: Option<String>,
+    yes: Option<String>,
+    no: Option<String>,
+    lp_yes: Option<String>,
+    lp_no: Option<String>,
+    outcome: Option<String>,
+    amount: Option<String>,
+    fee_bps: Option<String>,
+    out: Option<String>,
+    fee: Option<String>,
+    gross: Option<String>,
+    new_yes: Option<String>,
+    new_no: Option<String>,
+}
+
+fn u(s: &Option<String>) -> u128 {
+    s.as_ref().unwrap().parse().unwrap()
+}
+
+#[test]
+fn matches_typescript_reference_vectors() {
+    let raw = include_str!("../tests/vectors.json");
+    let vs: Vec<Vector> = serde_json::from_str(raw).unwrap();
+    assert!(vs.len() >= 800);
+    for (i, v) in vs.iter().enumerate() {
+        match v.kind.as_str() {
+            "seed" => {
+                let r = fpmm::seed_pool(u(&v.liquidity), u(&v.prob_ppm));
+                assert_eq!(r.is_ok(), v.ok, "seed #{i}");
+                if let Ok(s) = r {
+                    assert_eq!((s.pool.yes, s.pool.no, s.lp_yes, s.lp_no), (u(&v.yes), u(&v.no), u(&v.lp_yes), u(&v.lp_no)), "seed #{i}");
+                }
+            }
+            kind => {
+                let pool = fpmm::Pool { yes: u(&v.yes), no: u(&v.no) };
+                let side = if v.outcome.as_deref() == Some("YES") { Side::Yes } else { Side::No };
+                if kind == "buy" {
+                    let r = fpmm::quote_buy(&pool, side, u(&v.amount), u(&v.fee_bps));
+                    assert_eq!(r.is_ok(), v.ok, "buy #{i}");
+                    if let Ok(q) = r {
+                        assert_eq!((q.shares_out, q.fee, q.pool_after.yes, q.pool_after.no), (u(&v.out), u(&v.fee), u(&v.new_yes), u(&v.new_no)), "buy #{i}");
+                    }
+                } else {
+                    let r = fpmm::quote_sell(&pool, side, u(&v.amount), u(&v.fee_bps));
+                    assert_eq!(r.is_ok(), v.ok, "sell #{i}");
+                    if let Ok(q) = r {
+                        assert_eq!(
+                            (q.collateral_out, q.fee, q.gross, q.pool_after.yes, q.pool_after.no),
+                            (u(&v.out), u(&v.fee), u(&v.gross), u(&v.new_yes), u(&v.new_no)),
+                            "sell #{i}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------- market lifecycle ----------
+
+#[test]
+fn create_market_seeds_requested_probability() {
+    let c = setup();
+    let m = c.get_market(0).unwrap();
+    // floor rounding: within 2ppm of the requested 40%
+    assert!(m.price_yes_ppm.0.abs_diff(400_000) <= 2, "got {}", m.price_yes_ppm.0);
+    assert_eq!(m.sets.0, 10_000 * Q);
+    assert_eq!(c.get_account(owner()).unwrap().balance.0, 90_000 * Q);
+    assert_solvent(&c, &[owner()]);
+}
+
+#[test]
+fn human_buy_and_sell_round_trip() {
+    let mut c = setup();
+    as_user(alice());
+    let shares = c.buy(0, Outcome::Yes, U128(100 * Q), U128(1), Some("o-1".into()));
+    let m = c.get_market(0).unwrap();
+    assert!(m.price_yes_ppm.0 > 400_000, "YES price should rise");
+    assert_eq!(c.get_position(0, alice()).yes, shares);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 900 * Q);
+    assert_eq!(m.fees.0, Q); // 1% fee
+    assert_solvent(&c, &[owner(), alice()]);
+
+    as_user(bob());
+    c.buy(0, Outcome::No, U128(50 * Q), U128(1), None);
+    assert_solvent(&c, &[owner(), alice(), bob()]);
+
+    as_user(alice());
+    let out = c.sell(0, Outcome::Yes, shares, U128(1), Some("o-2".into()));
+    assert!(out.0 < 100 * Q, "round trip cannot profit without price movement in our favour");
+    assert_eq!(c.get_position(0, alice()).yes.0, 0);
+    assert_solvent(&c, &[owner(), alice(), bob()]);
+    let m = c.get_market(0).unwrap();
+    assert_eq!(m.trade_count.0, 3);
+}
+
+#[test]
+#[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
+fn human_trade_requires_wallet_confirmation() {
+    let mut c = setup();
+    as_view(alice());
+    c.buy(0, Outcome::Yes, U128(10 * Q), U128(1), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_SLIPPAGE")]
+fn slippage_bound_enforced() {
+    let mut c = setup();
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(10 * Q), U128(1_000 * Q), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_DUPLICATE_ORDER")]
+fn duplicate_order_id_rejected() {
+    let mut c = setup();
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(10 * Q), U128(1), Some("same".into()));
+    c.buy(0, Outcome::Yes, U128(10 * Q), U128(1), Some("same".into()));
+}
+
+#[test]
+#[should_panic(expected = "ERR_INSUFFICIENT_BALANCE")]
+fn cannot_spend_more_than_balance() {
+    let mut c = setup();
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(1_001 * Q), U128(1), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_INSUFFICIENT_SHARES")]
+fn cannot_sell_shares_not_held() {
+    let mut c = setup();
+    as_user(alice());
+    c.sell(0, Outcome::No, U128(Q), U128(0), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_WRONG_TOKEN")]
+fn rejects_deposits_from_other_tokens() {
+    let mut c = setup();
+    as_view("evil.testnet".parse().unwrap());
+    let _ = c.ft_on_transfer(alice(), U128(Q), String::new());
+}
+
+#[test]
+fn unregistered_deposit_is_refunded() {
+    let mut c = setup();
+    ctx(token(), NearToken::from_yoctonear(0), 0);
+    match c.ft_on_transfer("stranger.testnet".parse().unwrap(), U128(5 * Q), String::new()) {
+        PromiseOrValue::Value(v) => assert_eq!(v.0, 5 * Q),
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn deposit_for_another_registered_account() {
+    let mut c = setup();
+    ctx(token(), NearToken::from_yoctonear(0), 0);
+    let msg = format!(r#"{{"deposit_for":"{}"}}"#, bob());
+    let _ = c.ft_on_transfer(owner(), U128(7 * Q), msg);
+    assert_eq!(c.get_account(bob()).unwrap().balance.0, 1_007 * Q);
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_OWNER")]
+fn only_owner_creates_markets() {
+    let mut c = setup();
+    as_view(alice());
+    c.create_market("x".into(), "x?".into(), "c".into(), U128(500_000), U128(10 * Q), 100);
+}
+
+// ---------- agents ----------
+
+fn setup_agent(c: &mut QuireMarket) {
+    ctx(alice(), STORAGE, 0);
+    c.register_agent(agent(), U128(20 * Q), U128(50 * Q));
+    as_user(alice());
+    c.fund_agent(agent(), U128(200 * Q));
+}
+
+#[test]
+fn agent_trades_within_limits() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_view(agent());
+    c.buy(0, Outcome::Yes, U128(20 * Q), U128(1), Some("a-1".into()));
+    c.buy(0, Outcome::No, U128(20 * Q), U128(1), Some("a-2".into()));
+    let acc = c.get_account(agent()).unwrap();
+    assert_eq!(acc.agent.as_ref().unwrap().spent.0, 40 * Q);
+    assert_eq!(acc.balance.0, 160 * Q);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 800 * Q);
+    assert_solvent(&c, &[owner(), agent()]);
+}
+
+#[test]
+#[should_panic(expected = "ERR_AGENT_MAX_TRADE")]
+fn agent_max_trade_enforced() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_view(agent());
+    c.buy(0, Outcome::Yes, U128(21 * Q), U128(1), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_AGENT_SPEND_LIMIT")]
+fn agent_spend_limit_enforced() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_view(agent());
+    for _ in 0..3 {
+        c.buy(0, Outcome::Yes, U128(20 * Q), U128(1), None);
+    }
+}
+
+#[test]
+#[should_panic(expected = "ERR_AGENT_DISABLED")]
+fn disabled_agent_cannot_trade() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_view(alice());
+    c.update_agent(agent(), Some(false), None, None, None);
+    as_view(agent());
+    c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_AGENT_CANNOT_WITHDRAW")]
+fn agent_cannot_withdraw() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_user(agent());
+    let _ = c.withdraw(U128(Q));
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_AGENT_OWNER")]
+fn stranger_cannot_change_agent() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_view(bob());
+    c.update_agent(agent(), None, Some(U128(1_000 * Q)), None, None);
+}
+
+#[test]
+fn owner_reclaims_agent_funds() {
+    let mut c = setup();
+    setup_agent(&mut c);
+    as_user(alice());
+    c.reclaim_agent_funds(agent(), U128(200 * Q));
+    assert_eq!(c.get_account(agent()).unwrap().balance.0, 0);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 1_000 * Q);
+}
+
+// ---------- resolution ----------
+
+#[test]
+fn resolution_flow_and_redemption() {
+    let mut c = setup();
+    as_user(alice());
+    let yes = c.buy(0, Outcome::Yes, U128(100 * Q), U128(1), None);
+    as_user(bob());
+    c.buy(0, Outcome::No, U128(100 * Q), U128(1), None);
+
+    as_view(owner());
+    c.propose_resolution(0, Resolution::Yes, "https://example.org/evidence".into());
+    assert_eq!(c.get_market(0).unwrap().status, MarketStatus::ResolutionProposed);
+
+    ctx(owner(), NearToken::from_yoctonear(0), 2_000);
+    c.finalize_resolution(0);
+
+    let before = c.get_account(alice()).unwrap().balance.0;
+    as_view(alice());
+    let paid = c.redeem(0);
+    assert_eq!(paid, yes);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, before + yes.0);
+    as_view(bob());
+    assert_eq!(c.redeem(0).0, 0);
+
+    // remaining sets must still cover owner LP + pool YES
+    let m = c.get_market(0).unwrap();
+    let lp = c.get_position(0, owner()).yes.0;
+    assert_eq!(m.sets.0, m.pool_yes.0 + lp);
+}
+
+#[test]
+#[should_panic(expected = "ERR_MARKET_NOT_ACTIVE")]
+fn no_trading_while_resolution_pending() {
+    let mut c = setup();
+    as_view(owner());
+    c.propose_resolution(0, Resolution::No, String::new());
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+}
+
+#[test]
+#[should_panic(expected = "ERR_CHALLENGE_WINDOW_OPEN")]
+fn cannot_finalize_inside_challenge_window() {
+    let mut c = setup();
+    as_view(owner());
+    c.propose_resolution(0, Resolution::No, String::new());
+    ctx(owner(), NearToken::from_yoctonear(0), 500);
+    c.finalize_resolution(0);
+}
+
+#[test]
+fn owner_can_cancel_proposal_and_market_continues() {
+    let mut c = setup();
+    as_view(owner());
+    c.propose_resolution(0, Resolution::No, String::new());
+    c.cancel_resolution(0);
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+}
+
+#[test]
+fn invalid_resolution_pays_half_per_share() {
+    let mut c = setup();
+    as_user(alice());
+    let s = c.buy(0, Outcome::Yes, U128(100 * Q), U128(1), None);
+    as_view(owner());
+    c.propose_resolution(0, Resolution::Invalid, String::new());
+    ctx(owner(), NearToken::from_yoctonear(0), 5_000);
+    c.finalize_resolution(0);
+    as_view(alice());
+    assert_eq!(c.redeem(0).0, s.0 / 2);
+}
+
+#[test]
+#[should_panic(expected = "ERR_INSUFFICIENT_STORAGE")]
+fn storage_must_cover_new_positions() {
+    ctx(owner(), NearToken::from_yoctonear(0), 0);
+    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000));
+    register(&mut c, owner());
+    deposit(&mut c, owner(), 100_000 * Q);
+    as_view(owner());
+    for i in 0..3 {
+        c.create_market(format!("m{i}"), "q?".into(), "c".into(), U128(500_000), U128(100 * Q), 100);
+    }
+    // register alice with the bare minimum (account record only)
+    let min = NearToken::from_yoctonear(env::storage_byte_cost().as_yoctonear() * ACCOUNT_STORAGE_BYTES as u128);
+    ctx(alice(), min, 0);
+    c.storage_deposit(None);
+    deposit(&mut c, alice(), 100 * Q);
+    as_user(alice());
+    c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+}
