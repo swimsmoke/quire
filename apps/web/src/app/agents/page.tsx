@@ -1,16 +1,17 @@
 import Link from "next/link";
-import { Bot } from "lucide-react";
+import { BookOpenText, ChartNoAxesCombined, Scale, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { ago, qusd } from "@/lib/format";
+import { PageTitle } from "@/components/section";
 import type { Agent } from "@/lib/types";
 
 export const metadata = { title: "Agents" };
 
-const ROLE: Record<Agent["role"], string> = {
-  RESEARCH: "Research",
-  ANALYSIS: "Analysis",
-  TRADING: "Trading",
-  KNOWLEDGE: "Knowledge",
+const ROLE: Record<Agent["role"], { label: string; icon: typeof Search }> = {
+  RESEARCH: { label: "Research", icon: Search },
+  ANALYSIS: { label: "Analysis", icon: Scale },
+  TRADING: { label: "Trading", icon: ChartNoAxesCombined },
+  KNOWLEDGE: { label: "Knowledge", icon: BookOpenText },
 };
 
 const PERMISSION: Record<string, string> = {
@@ -21,92 +22,107 @@ const PERMISSION: Record<string, string> = {
 };
 
 function strategyRows(p: Record<string, string | number>): [string, string][] {
-  const rows: [string, string][] = [];
-  if (p.edgeThresholdPpm != null) rows.push(["Trades only when its estimate differs from the market by", `${Number(p.edgeThresholdPpm) / 10_000} points`]);
-  if (p.minConfidence != null) rows.push(["Minimum analysis confidence", String(p.minConfidence)]);
-  if (p.kellyFractionBps != null) rows.push(["Position sizing", `${Number(p.kellyFractionBps) / 100}% of Kelly`]);
-  if (p.maxTrade != null) rows.push(["Largest single trade", `${qusd(String(p.maxTrade))} qUSD`]);
-  if (p.spendLimit != null) rows.push(["Total spend limit", `${qusd(String(p.spendLimit))} qUSD`]);
-  if (p.maxPositionPerMarket != null) rows.push(["Largest position in one claim", `${qusd(String(p.maxPositionPerMarket))} qUSD`]);
-  return rows;
+  const r: [string, string][] = [];
+  if (p.edgeThresholdPpm != null) r.push(["Trades when its estimate differs from the price by", `${Number(p.edgeThresholdPpm) / 10_000} points or more`]);
+  if (p.minConfidence != null) r.push(["Minimum confidence", String(p.minConfidence)]);
+  if (p.kellyFractionBps != null) r.push(["Sizing", `${Number(p.kellyFractionBps) / 100}% of Kelly`]);
+  if (p.maxTrade != null) r.push(["Largest single trade", `${qusd(String(p.maxTrade))} qUSD`]);
+  if (p.spendLimit != null) r.push(["Total spend limit", `${qusd(String(p.spendLimit))} qUSD`]);
+  if (p.maxPositionPerMarket != null) r.push(["Largest position per claim", `${qusd(String(p.maxPositionPerMarket))} qUSD`]);
+  return r;
 }
 
 export default async function AgentsPage() {
   const { agents } = await api.agents();
-  const activity = await Promise.all(agents.map((a) => api.agentActivity(a.slug).then((r) => r.activity.slice(0, 5)).catch(() => [])));
+  const activity = await Promise.all(agents.map((a) => api.agentActivity(a.slug).then((r) => r.activity.slice(0, 4)).catch(() => [])));
 
   return (
-    <div className="py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
-      <p className="mt-2 max-w-[62ch] text-fade">
-        Four agents work on every claim, each with one job and only the permissions that job needs. Research and trading are separate: an agent that recommends a trade cannot authorise it, and the trading agent can only spend what its owner funded, inside limits the contract enforces.
-      </p>
-
-      <ul className="mt-10 space-y-12">
-        {agents.map((a, i) => (
-          <li key={a.id} className="grid gap-6 border-t border-ink pt-6 lg:grid-cols-[1fr_1fr]">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-semibold">
-                <Bot size={18} aria-hidden /> {a.name}
-              </h2>
-              <p className="mt-1 text-sm text-fade">
-                {ROLE[a.role]} agent, {a.enabled ? "enabled" : "disabled"}
-              </p>
-              <p className="mt-3 max-w-prose">{a.description}</p>
-              <h3 className="mt-5 text-sm font-semibold">Permissions</h3>
-              <ul className="mt-1 text-sm">
-                {a.permissions.map((p) => (
-                  <li key={p}>{PERMISSION[p] ?? p}</li>
-                ))}
-              </ul>
-              <p className="mt-4 text-sm text-fade">
-                {a.nearAccountId ? `Trades as ${a.nearAccountId} with a function-call key only.` : a.role === "TRADING" ? "No NEAR account yet. It receives a testnet account with a function-call key when on-chain trading is enabled." : "Does not hold funds or keys."}
-              </p>
-              <p className="mt-1 text-sm text-fade">Enable and disable controls appear for the agent&apos;s owner.</p>
-            </div>
-            <div className="space-y-6">
-              {a.strategy && (
-                <div>
-                  <h3 className="text-sm font-semibold">Strategy</h3>
-                  <p className="mt-1 text-sm">{a.strategy.description}</p>
-                  <dl className="tabular mt-3 divide-y divide-rule border-y border-rule text-sm">
-                    {strategyRows(a.strategy.params).map(([k, v]) => (
-                      <div key={k} className="flex justify-between gap-4 py-1.5">
-                        <dt className="text-fade">{k}</dt>
-                        <dd className="text-right">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              )}
+    <>
+      <PageTitle
+        title="Agents"
+        subtitle="Four agents work on every claim, each with one job and only the permissions it needs. An agent that recommends a trade cannot place it, and the trading agent can only spend what its owner funded, inside limits the contract enforces."
+      />
+      <div className="space-y-14">
+        {agents.map((a, i) => {
+          const role = ROLE[a.role];
+          const Icon = role.icon;
+          return (
+            <section key={a.id} aria-labelledby={`agent-${a.slug}`} className="grid gap-x-14 gap-y-6 border-t hairline pt-8 lg:grid-cols-2">
               <div>
-                <h3 className="text-sm font-semibold">Record</h3>
-                <p className="tabular mt-1 text-sm">
-                  {a.stats.activityCount} actions, {a.stats.tradeCount} trades, {qusd(a.stats.volume)} qUSD traded. Last active {ago(a.stats.lastActiveAt)}.
+                <div className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-[12px] bg-tint/12 text-tint">
+                    <Icon size={21} strokeWidth={1.8} aria-hidden />
+                  </span>
+                  <div>
+                    <h2 id={`agent-${a.slug}`} className="text-title2 leading-tight font-semibold tracking-[-0.02em]">
+                      {a.name}
+                    </h2>
+                    <p className="text-footnote text-label-2">
+                      {role.label} agent,{" "}
+                      <span className={a.enabled ? "text-yes" : "text-no"}>{a.enabled ? "enabled" : "disabled"}</span>
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4 max-w-[58ch] text-body text-label-2">{a.description}</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {a.permissions.map((p) => (
+                    <span key={p} className="rounded-full bg-fill px-3 py-1 text-footnote font-medium">
+                      {PERMISSION[p] ?? p}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-4 text-footnote text-label-3">
+                  {a.nearAccountId
+                    ? `Trades as ${a.nearAccountId} with a key that can only call the market contract.`
+                    : a.role === "TRADING"
+                      ? "No NEAR account yet. It gets a testnet account with a contract-only key when on-chain trading is switched on."
+                      : "Holds no funds and no keys."}{" "}
+                  Enable and disable controls appear for the agent&apos;s owner.
                 </p>
-                {activity[i]!.length ? (
-                  <ul className="mt-2 divide-y divide-rule text-sm">
-                    {activity[i]!.map((x) => (
-                      <li key={x.id} className="py-1.5">
-                        {x.marketSlug ? (
-                          <Link href={`/markets/${x.marketSlug}`} className="hover:underline">
-                            {x.summary}
-                          </Link>
-                        ) : (
-                          x.summary
-                        )}{" "}
-                        <span className="text-xs text-fade">{ago(x.createdAt)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-1 text-sm text-fade">No activity yet.</p>
-                )}
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+
+              <div className="space-y-8">
+                {a.strategy && (
+                  <div>
+                    <h3 className="text-sub font-semibold">Strategy</h3>
+                    <p className="mt-1 text-sub text-label-2">{a.strategy.description}</p>
+                    <dl className="tabular mt-3 divide-y hairline border-y hairline text-sub">
+                      {strategyRows(a.strategy.params).map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-6 py-2.5">
+                          <dt className="text-label-2">{k}</dt>
+                          <dd className="text-right font-medium">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-sub font-semibold">Record</h3>
+                  <p className="tabular mt-1 text-sub text-label-2">
+                    {a.stats.activityCount} actions, {a.stats.tradeCount} trades, {qusd(a.stats.volume)} qUSD traded. Last active {ago(a.stats.lastActiveAt)}.
+                  </p>
+                  {activity[i]!.length > 0 && (
+                    <ul className="mt-2 divide-y hairline text-sub">
+                      {activity[i]!.map((x) => (
+                        <li key={x.id} className="flex justify-between gap-4 py-2">
+                          {x.marketSlug ? (
+                            <Link href={`/markets/${x.marketSlug}`} className="hover:text-tint">
+                              {x.summary}
+                            </Link>
+                          ) : (
+                            <span>{x.summary}</span>
+                          )}
+                          <span className="shrink-0 text-footnote text-label-3">{ago(x.createdAt)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </>
   );
 }

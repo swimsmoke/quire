@@ -76,6 +76,8 @@ describe("trading", () => {
     expect(pf.positions[0].yesShares).toBe(q.amountOut);
     expect(pf.positions[0].costBasis).toBe("100000000");
     expect(BigInt(pf.positions[0].liquidationValue) < BigInt(pf.positions[0].markValue)).toBe(true);
+    const mk = (await ctx.app.inject({ method: "GET", url: `/markets/${SLUG}` })).json().market;
+    expect(mk.change24hPpm).toBe(Number(q.priceAfterPpm) - 500_000);
     expect(pf.trades.length).toBe(1);
 
     const hist = (await ctx.app.inject({ method: "GET", url: `/markets/${SLUG}/history` })).json().points;

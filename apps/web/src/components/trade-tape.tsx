@@ -5,29 +5,33 @@ import { ago, pct, qusd, shortAccount } from "@/lib/format";
 import { ModeTag } from "./mode";
 
 export function TradeTape({ trades, showMarket = false, empty = "No trades yet." }: { trades: Trade[]; showMarket?: boolean; empty?: string }) {
-  if (!trades.length) return <p className="py-4 text-sm text-fade">{empty}</p>;
+  if (!trades.length) return <p className="py-6 text-sub text-label-2">{empty}</p>;
   return (
-    <ul className="divide-y divide-rule text-sm">
+    <ul className="divide-y hairline">
       {trades.map((t) => (
-        <li key={t.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
-          <span className="flex items-center gap-1.5">
-            {t.actorKind === "AGENT" ? <Bot size={13} aria-label="agent" /> : <UserRound size={13} aria-label="human" />}
-            <span>{t.agentName ?? shortAccount(t.traderAccount)}</span>
+        <li key={t.id} className="flex gap-3 py-3.5">
+          <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${t.actorKind === "AGENT" ? "bg-tint/12 text-tint" : "bg-fill text-label-2"}`}>
+            {t.actorKind === "AGENT" ? <Bot size={15} aria-label="agent" /> : <UserRound size={15} aria-label="human" />}
           </span>
-          <span>
-            {t.side === "BUY" ? "bought" : "sold"} <span className={t.outcome === "YES" ? "text-ledger" : "text-umber"}>{t.outcome}</span>{" "}
-            <span className="tabular">for {qusd(t.collateral)} qUSD</span>
-          </span>
-          {showMarket && t.slug && (
-            <Link href={`/markets/${t.slug}`} className="min-w-0 basis-full truncate text-fade underline decoration-rule hover:text-ink">
-              {t.question}
-            </Link>
-          )}
-          <span className="tabular ml-auto text-fade">
-            {pct(t.priceBeforePpm)} → {pct(t.priceAfterPpm)}
-          </span>
-          <span className="text-xs text-fade">{ago(t.createdAt)}</span>
-          {t.executionMode === "SIMULATED" && <ModeTag mode="SIMULATED" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-sub">
+              <span className="font-medium">{t.agentName ?? shortAccount(t.traderAccount)}</span> {t.side === "BUY" ? "bought" : "sold"}{" "}
+              <span className={`font-medium ${t.outcome === "YES" ? "text-yes" : "text-no"}`}>{t.outcome === "YES" ? "Yes" : "No"}</span>
+              <span className="tabular text-label-2"> for {qusd(t.collateral)} qUSD</span>
+            </p>
+            {showMarket && t.slug && (
+              <Link href={`/markets/${t.slug}`} className="mt-0.5 block truncate text-footnote text-label-2 hover:text-tint">
+                {t.question}
+              </Link>
+            )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-footnote text-label-3">
+              <span className="tabular">
+                {pct(t.priceBeforePpm)} to {pct(t.priceAfterPpm)}
+              </span>
+              <span>{ago(t.createdAt)}</span>
+              {t.executionMode === "SIMULATED" && <ModeTag mode="SIMULATED" />}
+            </p>
+          </div>
         </li>
       ))}
     </ul>

@@ -1,24 +1,31 @@
-import type { ExecutionMode } from "@/lib/types";
+"use client";
 
-/** Inline marker on every record so simulated activity is never mistaken for on-chain activity. */
+import { useState } from "react";
+import type { ExecutionMode } from "@/lib/types";
+import { Sheet } from "./ui";
+
+/** Small marker on every record so simulated activity is never mistaken for on-chain activity. */
 export function ModeTag({ mode }: { mode: ExecutionMode | "CONFIDENTIAL_TEE" }) {
-  const label = {
-    SIMULATED: "simulated",
-    ONCHAIN_TESTNET: "NEAR testnet",
-    ONCHAIN_MAINNET: "NEAR mainnet",
-    CONFIDENTIAL_TEE: "TEE inference",
-  }[mode];
-  const tone = mode === "SIMULATED" ? "border-sim/50 text-sim" : "border-ledger/40 text-ledger";
-  return <span className={`inline-block border px-1.5 text-xs leading-5 ${tone}`}>{label}</span>;
+  const label = { SIMULATED: "Simulated", ONCHAIN_TESTNET: "NEAR testnet", ONCHAIN_MAINNET: "NEAR mainnet", CONFIDENTIAL_TEE: "TEE inference" }[mode];
+  const tone = mode === "SIMULATED" ? "text-sim bg-sim/12" : "text-tint bg-tint/12";
+  return <span className={`inline-flex h-5 items-center rounded-full px-2 text-caption font-medium ${tone}`}>{label}</span>;
 }
 
-export function ModeNotice({ mode }: { mode: string }) {
-  if (mode !== "SIMULATED") return null;
+/** Nav-bar badge explaining simulated mode. */
+export function SimulatedBadge() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-sim/30 bg-[#e3d6b4] text-sm">
-      <p className="mx-auto max-w-6xl px-5 py-2">
-        Simulated mode: trades settle on Quire&apos;s test ledger, not on NEAR. Every simulated record is marked <ModeTag mode="SIMULATED" />.
-      </p>
-    </div>
+    <>
+      <button onClick={() => setOpen(true)} className="inline-flex h-6 items-center gap-1.5 rounded-full bg-sim/12 px-2.5 text-footnote font-medium text-sim transition-transform active:scale-95">
+        <span className="size-1.5 rounded-full bg-sim" aria-hidden />
+        Simulated
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Simulated mode">
+        <div className="space-y-3 pb-2 text-sub text-label-2">
+          <p>Trades on this deployment settle on Quire&apos;s test ledger, not on NEAR. Balances are test qUSD with no value.</p>
+          <p>Every simulated record carries an orange Simulated label. When markets move on-chain, those records show NEAR testnet instead, with a link to the transaction.</p>
+        </div>
+      </Sheet>
+    </>
   );
 }

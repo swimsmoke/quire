@@ -1,56 +1,197 @@
 @import "tailwindcss";
 
-@theme {
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --font-sans: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+/* dark: variant keyed to the resolved theme on <html data-theme> */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-  --color-vellum: #e9e1cd; /* page */
-  --color-sheet: #f2ecdd; /* raised leaf */
-  --color-ink: #322e25; /* primary text */
-  --color-fade: #6f6756; /* secondary text */
-  --color-rule: #cdbf9f; /* soft borders */
-  --color-ledger: #1e4d8c; /* actions, YES */
-  --color-ledger-deep: #173d70;
-  --color-umber: #8a4b2a; /* NO */
-  --color-sim: #8a6d1e; /* simulated-mode marker */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-2: #f5f5f7; /* quiet secondary surface: inputs, sheets' inner wells */
+  --elevated: #ffffff; /* sheets / popovers */
+  --label: #1d1d1f;
+  --label-2: #6e6e73;
+  --label-3: #a1a1a6;
+  --separator: rgba(0, 0, 0, 0.1);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.2);
+  --tint: #0071e3;
+  --tint-press: #0062c4;
+  --yes: #1f8a3c;
+  --no: #d70015;
+  --sim: #b25000;
+  --scrim: rgba(0, 0, 0, 0.32);
+  --chrome: rgba(255, 255, 255, 0.72); /* frosted bars */
+  --shadow-sheet: 0 24px 64px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
 
-  /* type scale: 12 / 14 / 16 / 20 / 28 / 44 / 72 / 120 */
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
-  --text-2xl: 2.75rem;
-  --text-3xl: 4.5rem;
-  --text-4xl: 7.5rem;
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-2: #1c1c1e;
+  --elevated: #1c1c1e;
+  --label: #f5f5f7;
+  --label-2: #98989d;
+  --label-3: #636366;
+  --separator: rgba(255, 255, 255, 0.12);
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-2: rgba(120, 120, 128, 0.36);
+  --tint: #2997ff;
+  --tint-press: #4aa8ff;
+  --yes: #30d158;
+  --no: #ff453a;
+  --sim: #ff9f0a;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --chrome: rgba(22, 22, 23, 0.72);
+  --shadow-sheet: 0 24px 64px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter Variable", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-elevated: var(--elevated);
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-separator: var(--separator);
+  --color-fill: var(--fill);
+  --color-fill-2: var(--fill-2);
+  --color-tint: var(--tint);
+  --color-tint-press: var(--tint-press);
+  --color-yes: var(--yes);
+  --color-no: var(--no);
+  --color-sim: var(--sim);
+  --color-scrim: var(--scrim);
+  --color-chrome: var(--chrome);
+
+  /* iOS-like type scale */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.125rem;
+  --text-sub: 0.9375rem;
+  --text-sub--line-height: 1.375rem;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6rem;
+  --text-title3: 1.25rem;
+  --text-title3--line-height: 1.6rem;
+  --text-title2: 1.625rem;
+  --text-title2--line-height: 2rem;
+  --text-large: 2.5rem;
+  --text-large--line-height: 2.875rem;
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @layer base {
+  /* Tailwind 4 defaults borders to currentColor; iOS uses a quiet separator everywhere */
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    border-color: var(--separator);
+  }
   html {
-    background: var(--color-vellum);
-    color: var(--color-ink);
-    font-family: var(--font-mono);
-    font-feature-settings: "zero" 0;
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
-    min-height: 100vh;
-    line-height: 1.6;
+    min-height: 100dvh;
+    font-size: var(--text-body);
+    line-height: 1.55;
+    letter-spacing: -0.011em;
+  }
+  /* smooth theme switch, without animating layout */
+  html.theme-transition,
+  html.theme-transition * {
+    transition:
+      background-color 0.35s var(--ease-ios),
+      border-color 0.35s var(--ease-ios),
+      color 0.35s var(--ease-ios),
+      fill 0.35s var(--ease-ios),
+      stroke 0.35s var(--ease-ios) !important;
   }
   ::selection {
-    background: var(--color-ledger);
-    color: var(--color-sheet);
+    background: color-mix(in srgb, var(--tint) 28%, transparent);
   }
   :focus-visible {
-    outline: 2px solid var(--color-ledger);
+    outline: 2px solid var(--tint);
     outline-offset: 2px;
-  }
-  a {
-    text-underline-offset: 3px;
+    border-radius: 6px;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  .hairline {
+    border-color: var(--separator);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes check {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@utility anim-sheet {
+  animation: sheet-up 0.45s var(--ease-ios) both;
+}
+@utility anim-pop {
+  animation: pop-in 0.35s var(--ease-ios) both;
+}
+@utility anim-fade {
+  animation: fade-in 0.25s ease-out both;
+}
+@utility anim-draw {
+  stroke-dasharray: 1;
+  animation: draw 1.4s var(--ease-ios) both;
+}
+@utility anim-check {
+  stroke-dasharray: 1;
+  animation: check 0.5s 0.1s var(--ease-ios) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -58,20 +199,7 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* The one orchestrated moment: the hero ink line draws itself once. */
-@keyframes ink-draw {
-  from {
-    stroke-dashoffset: var(--len);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-.ink-draw {
-  stroke-dasharray: var(--len);
-  animation: ink-draw 1.6s cubic-bezier(0.6, 0, 0.2, 1) both;
 }

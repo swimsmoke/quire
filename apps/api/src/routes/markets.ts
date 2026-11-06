@@ -24,10 +24,14 @@ const statsSql = sql`
     coalesce((select sum(t.collateral) from trades t where t.market_id = m.id and t.created_at > now() - interval '24 hours'), 0)::text as volume_24h,
     (select count(distinct t.trader_account) from trades t where t.market_id = m.id and t.actor_kind = 'HUMAN')::int as human_traders,
     (select count(distinct t.trader_account) from trades t where t.market_id = m.id and t.actor_kind = 'AGENT')::int as agent_traders,
-    (select max(t.created_at) from trades t where t.market_id = m.id) as last_trade_at
+    (select max(t.created_at) from trades t where t.market_id = m.id) as last_trade_at,
+    coalesce(
+      (select s.price_yes_ppm from market_snapshots s where s.market_id = m.id and s.taken_at <= now() - interval '24 hours' order by s.taken_at desc limit 1),
+      (select s.price_yes_ppm from market_snapshots s where s.market_id = m.id order by s.taken_at asc limit 1)
+    )::int as price_24h_ago
   from markets m`;
 
-type StatRow = { market_id: string; volume_24h: string; human_traders: number; agent_traders: number; last_trade_at: Date | null };
+type StatRow = { market_id: string; volume_24h: string; human_traders: number; agent_traders: number; last_trade_at: Date | null; price_24h_ago: number | null };
 
 async function statsByMarket(app: FastifyInstance) {
   const r = await app.db.execute<StatRow>(statsSql);
@@ -58,6 +62,8 @@ function present(m: typeof markets.$inferSelect, c: typeof claims.$inferSelect, 
     humanTraders: s?.human_traders ?? 0,
     agentTraders: s?.agent_traders ?? 0,
     lastTradeAt: s?.last_trade_at ?? null,
+    /** change in YES probability over 24h (or since creation if younger), in ppm points */
+    change24hPpm: s?.price_24h_ago != null ? m.priceYesPpm - s.price_24h_ago : 0,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
   };

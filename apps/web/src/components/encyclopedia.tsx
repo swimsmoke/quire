@@ -1,17 +1,16 @@
-import { ShieldCheck, ShieldQuestion } from "lucide-react";
+import { ShieldCheck, ShieldQuestion, ChevronDown } from "lucide-react";
 import type { Encyclopedia, Evidence } from "@/lib/types";
 import { dateTime, pct } from "@/lib/format";
 import { ModeTag } from "./mode";
 
-/** The nine required sections, in reading order. */
 const SECTION_ORDER: [string, string][] = [
-  ["overview", "Claim overview"],
+  ["overview", "Overview"],
   ["background", "Background and context"],
   ["consensus", "Current market consensus"],
   ["supporting", "Supporting evidence"],
   ["contradicting", "Contradicting evidence"],
   ["uncertainties", "Important uncertainties"],
-  ["history", "Relevant market history"],
+  ["history", "Market history"],
   ["changes", "Changes since the previous revision"],
 ];
 
@@ -21,11 +20,11 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
   const cur = data.current;
   if (!cur) {
     return (
-      <div className="py-2">
-        <p className="max-w-prose">
-          No article yet. Scribe writes the first revision with confidential inference once this claim has verified evidence, and revises it when the market or the evidence changes materially.
+      <div className="max-w-[62ch]">
+        <p className="text-body">No article yet.</p>
+        <p className="mt-2 text-sub text-label-2">
+          Scribe writes the first revision with confidential inference once this claim has verified evidence, then revises it when the price or the evidence changes materially. Nothing here is pre-written.
         </p>
-        <p className="mt-2 text-sm text-fade">Nothing on this page is pre-written: every revision is generated from live market state and the evidence listed below.</p>
       </div>
     );
   }
@@ -34,43 +33,38 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
   const drift = Math.abs(currentPpm - cur.priceYesPpm);
 
   return (
-    <article>
-      <p className="mb-6 text-sm text-fade">
-        AI-generated interpretation of the market and the cited evidence. It is not an independently established fact, and market probability is collective belief, not truth.
+    <article className="max-w-[66ch]">
+      <p className="text-footnote text-label-2">
+        AI-generated interpretation of the market and the cited evidence, not an established fact. Market probability is collective belief, not truth.
       </p>
-      <ol className="space-y-8">
-        {SECTION_ORDER.map(([key, title], i) => {
+      <div className="mt-6 space-y-8">
+        {SECTION_ORDER.map(([key, title]) => {
           const s = content[key];
           const body = typeof s === "string" ? s : s?.body;
-          const cites = typeof s === "object" ? s?.citations ?? [] : [];
+          const cites = typeof s === "object" ? (s?.citations ?? []) : [];
           if (!body) return null;
           return (
-            <li key={key} className="grid gap-2 md:grid-cols-[2.5rem_1fr]">
-              <span className="tabular text-fade">{i + 1}.</span>
-              <div>
-                <h3 className="mb-2 font-semibold">{title}</h3>
-                <p className="max-w-prose whitespace-pre-line leading-7">{body}</p>
-                {cites.length > 0 && (
-                  <p className="mt-2 text-sm text-fade">
-                    Sources:{" "}
-                    {cites.map((id) => (
-                      <a key={id} href={`#evidence-${id}`} className="mr-2 underline decoration-rule hover:text-ink">
-                        [{evidenceIndex.get(id) ?? "?"}]
-                      </a>
-                    ))}
-                  </p>
-                )}
-              </div>
-            </li>
+            <section key={key}>
+              <h3 className="text-body font-semibold">{title}</h3>
+              <p className="mt-2 text-body leading-[1.7] whitespace-pre-line">{body}</p>
+              {cites.length > 0 && (
+                <p className="mt-2 flex flex-wrap gap-1.5">
+                  {cites.map((id) => (
+                    <a key={id} href={`#evidence-${id}`} className="tabular rounded-full bg-fill px-2 py-0.5 text-caption font-medium text-tint hover:bg-fill-2">
+                      Source {evidenceIndex.get(id) ?? "?"}
+                    </a>
+                  ))}
+                </p>
+              )}
+            </section>
           );
         })}
-      </ol>
-      <footer className="mt-8 border-t border-rule pt-4 text-sm">
+      </div>
+      <footer className="mt-10 border-t hairline pt-4 text-footnote text-label-2">
         <p>
-          Revision {cur.revisionNumber}, generated {dateTime(cur.createdAt)} at Yes {pct(cur.priceYesPpm)}.
-          {drift >= 20_000 && <span className="text-umber"> The market has since moved to {pct(currentPpm)}; a revision is due.</span>}
+          Revision {cur.revisionNumber}, written {dateTime(cur.createdAt)} when Yes was {pct(cur.priceYesPpm)}. Trigger: {cur.triggerReason}.
+          {drift >= 20_000 && <span className="text-no"> Yes has since moved to {pct(currentPpm)}; a revision is due.</span>}
         </p>
-        <p className="text-fade">Trigger: {cur.triggerReason}</p>
         {cur.inference && <InferenceMeta inf={cur.inference} />}
       </footer>
     </article>
@@ -80,62 +74,63 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
 function InferenceMeta({ inf }: { inf: NonNullable<NonNullable<Encyclopedia["current"]>["inference"]> }) {
   const verified = inf.signatureVerified === true;
   return (
-    <details className="mt-3 border border-rule bg-sheet p-3">
-      <summary className="flex cursor-pointer items-center gap-2">
-        {verified ? <ShieldCheck size={15} className="text-ledger" aria-hidden /> : <ShieldQuestion size={15} className="text-fade" aria-hidden />}
-        <span>Confidential generation record</span>
+    <details className="group mt-4">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sub text-label">
+        {verified ? <ShieldCheck size={16} className="text-yes" aria-hidden /> : <ShieldQuestion size={16} className="text-label-2" aria-hidden />}
+        How this revision was generated
         <ModeTag mode={inf.mode === "CONFIDENTIAL_TEE" ? "CONFIDENTIAL_TEE" : "SIMULATED"} />
+        <ChevronDown size={15} className="ml-auto text-label-3 transition-transform duration-300 ease-ios group-open:rotate-180" aria-hidden />
       </summary>
-      <dl className="mt-3 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[10rem_1fr]">
-        <dt className="text-fade">Model</dt>
+      <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-footnote sm:grid-cols-[11rem_1fr]">
+        <dt className="text-label-2">Model</dt>
         <dd>{inf.model} via {inf.provider}</dd>
-        <dt className="text-fade">Request hash</dt>
-        <dd className="break-all">{inf.requestHash ?? "n/a"}</dd>
-        <dt className="text-fade">Response hash</dt>
-        <dd className="break-all">{inf.responseHash ?? "n/a"}</dd>
-        <dt className="text-fade">TEE signing address</dt>
-        <dd className="break-all">{inf.signingAddress ?? "n/a"}</dd>
-        <dt className="text-fade">Signature check</dt>
-        <dd>{inf.signatureVerified == null ? "not checked" : verified ? "recovered signer matches the TEE key" : "failed"}</dd>
-        <dt className="text-fade">Attestation</dt>
-        <dd>{inf.attestationBindsSigner == null ? "not checked" : inf.attestationBindsSigner ? "signing key bound to attested hardware" : "not bound"}</dd>
+        <dt className="text-label-2">Request hash</dt>
+        <dd className="font-mono break-all">{inf.requestHash ?? "n/a"}</dd>
+        <dt className="text-label-2">Response hash</dt>
+        <dd className="font-mono break-all">{inf.responseHash ?? "n/a"}</dd>
+        <dt className="text-label-2">Enclave signing key</dt>
+        <dd className="font-mono break-all">{inf.signingAddress ?? "n/a"}</dd>
+        <dt className="text-label-2">Signature</dt>
+        <dd>{inf.signatureVerified == null ? "Not checked" : verified ? "Valid: signed by the enclave key" : "Failed verification"}</dd>
+        <dt className="text-label-2">Attestation</dt>
+        <dd>{inf.attestationBindsSigner == null ? "Not checked" : inf.attestationBindsSigner ? "Key bound to attested hardware" : "Key not bound"}</dd>
       </dl>
-      <p className="mt-3 text-xs text-fade">
-        Attestation shows where and how the text was generated (inside a hardware enclave, by this model). It says nothing about whether the content is correct.
-      </p>
+      <p className="mt-3 text-footnote text-label-2">Attestation shows where and how the text was generated. It says nothing about whether the content is correct.</p>
     </details>
   );
 }
 
 const VERIFY_LABEL: Record<Evidence["verificationStatus"], string> = {
-  EXCERPT_VERIFIED: "excerpt found in source",
-  FETCHED: "source retrieved",
-  UNVERIFIED: "not yet checked",
-  EXCERPT_NOT_FOUND: "excerpt not found in source",
-  FETCH_FAILED: "source unreachable",
+  EXCERPT_VERIFIED: "Excerpt found in source",
+  FETCHED: "Source retrieved",
+  UNVERIFIED: "Not yet checked",
+  EXCERPT_NOT_FOUND: "Excerpt not found in source",
+  FETCH_FAILED: "Source unreachable",
 };
 
 export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   if (!evidence.length) {
-    return <p className="py-4 text-sm text-fade">No evidence submitted yet. Scout and human traders add sources here; each one is fetched and its excerpt checked against the page.</p>;
+    return <p className="max-w-[62ch] text-sub text-label-2">No evidence yet. Scout and traders add sources here, and Quire fetches each one to check the quoted excerpt is really on the page.</p>;
   }
   return (
-    <ol className="divide-y divide-rule">
+    <ol className="divide-y hairline border-y hairline">
       {evidence.map((e, i) => (
-        <li key={e.id} id={`evidence-${e.id}`} className="grid gap-1 py-4 md:grid-cols-[2.5rem_1fr]">
-          <span className="tabular text-fade">[{i + 1}]</span>
-          <div className="min-w-0">
+        <li key={e.id} id={`evidence-${e.id}`} className="flex scroll-mt-20 gap-4 py-5">
+          <span className="tabular w-5 shrink-0 text-sub text-label-3">{i + 1}</span>
+          <div className="min-w-0 max-w-[64ch]">
             <p className="flex flex-wrap items-baseline gap-x-3">
-              <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="font-medium underline decoration-rule hover:decoration-ink">
+              <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-body font-medium hover:text-tint">
                 {e.title}
               </a>
-              <span className={e.stance === "SUPPORTS" ? "text-ledger" : e.stance === "CONTRADICTS" ? "text-umber" : "text-fade"}>{e.stance.toLowerCase()}</span>
+              <span className={`text-footnote font-medium ${e.stance === "SUPPORTS" ? "text-yes" : e.stance === "CONTRADICTS" ? "text-no" : "text-label-2"}`}>
+                {e.stance === "SUPPORTS" ? "Supports" : e.stance === "CONTRADICTS" ? "Contradicts" : "Context"}
+              </span>
             </p>
-            <blockquote className="mt-2 max-w-prose border-l-2 border-rule pl-3 text-sm">{e.excerpt}</blockquote>
-            <p className="mt-2 text-xs text-fade">
+            <blockquote className="mt-2 border-l-2 hairline pl-3 text-sub text-label-2">{e.excerpt}</blockquote>
+            <p className="mt-2 text-footnote text-label-3">
               {e.sourceName}
-              {e.publishedAt && `, published ${new Date(e.publishedAt).toISOString().slice(0, 10)}`}
-              {e.retrievedAt && `, retrieved ${dateTime(e.retrievedAt)}`}. Check: {VERIFY_LABEL[e.verificationStatus]}. Submitted by {e.agentName ?? "a trader"}.
+              {e.publishedAt && `, published ${new Date(e.publishedAt).toISOString().slice(0, 10)}`}. {VERIFY_LABEL[e.verificationStatus]}. Added by {e.agentName ?? "a trader"}
+              {e.retrievedAt && `, retrieved ${dateTime(e.retrievedAt)}`}.
             </p>
           </div>
         </li>

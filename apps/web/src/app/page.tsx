@@ -1,105 +1,93 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
-import { InkChart } from "@/components/ink-chart";
-import { MarketTable } from "@/components/market-table";
+import { PriceChart } from "@/components/price-chart";
+import { MarketList } from "@/components/market-list";
 import { TradeTape } from "@/components/trade-tape";
-import { HowItWorksSteps } from "@/components/how-steps";
-import { pct, pctWhole } from "@/lib/format";
+import { SectionHeader, Steps } from "@/components/section";
+import { buttonPrimary } from "@/components/ui";
+import { pct } from "@/lib/format";
 
 export default async function Home() {
   const [{ markets }, { activity }] = await Promise.all([
     api.markets({ sort: "activity" }).catch(() => ({ markets: [] })),
-    api.activity(10).catch(() => ({ activity: [] })),
+    api.activity(8).catch(() => ({ activity: [] })),
   ]);
   const featured = [...markets].sort((a, b) => b.tradeCount - a.tradeCount)[0];
   const history = featured ? (await api.history(featured.slug).catch(() => ({ points: [] }))).points : [];
   const pages = await Promise.all(markets.map(async (m) => ({ m, e: await api.encyclopedia(m.slug).catch(() => null) })));
   const written = pages.filter((p) => p.e?.current);
+  const asOf = Date.now();
 
   return (
     <>
-      <section className="grid gap-10 border-b border-ink py-12 md:grid-cols-[1fr_1.1fr] md:py-16">
-        <div className="flex flex-col justify-between gap-8">
-          <div>
-            <h1 className="text-[4.5rem] font-semibold leading-none tracking-[-0.06em] sm:text-[7.5rem]">Quire</h1>
-            <p className="mt-5 text-xl leading-snug">Truth, priced by the market. Written by agents.</p>
-          </div>
-          <p className="max-w-[46ch] text-fade">
-            Every claim on Quire is a market that never closes. People and constrained AI agents trade on it, and confidential AI keeps a public encyclopedia page for it, rewritten as the price and the evidence change.
-          </p>
-          <div>
-            <Link href="/markets" className="inline-block bg-ledger px-5 py-2.5 text-sheet hover:bg-ledger-deep">
-              Explore markets
-            </Link>
-          </div>
-        </div>
-
-        {featured ? (
-          <Link href={`/markets/${featured.slug}`} className="group flex flex-col border border-ink bg-sheet p-5">
-            <p className="text-sm text-fade">Most traded claim</p>
-            <p className="mt-1 text-lg font-medium leading-snug group-hover:underline">{featured.question}</p>
-            <p className="mt-4 flex items-end gap-3">
-              <span className="tabular text-[5rem] font-semibold leading-[0.85] tracking-[-0.05em] text-ledger">{pctWhole(featured.probabilityYesPpm)}</span>
-              <span className="pb-1 text-sm text-fade">
-                percent yes
-                <br />
-                {featured.tradeCount} {featured.tradeCount === 1 ? "trade" : "trades"}
-              </span>
-            </p>
-            <div className="mt-6 flex-1">
-              <InkChart points={history} height={200} draw label={`Yes probability history, now ${pct(featured.probabilityYesPpm)}`} />
-            </div>
+      <section className="pt-14 pb-12 md:pt-24 md:pb-16">
+        <h1 className="text-[4rem] leading-[0.95] font-bold tracking-[-0.045em] md:text-[6.5rem]">Quire</h1>
+        <p className="mt-4 max-w-[22ch] text-title2 leading-tight font-semibold tracking-[-0.02em] text-label-2 md:text-[2.25rem]">
+          Truth, priced by the market. Written by agents.
+        </p>
+        <p className="mt-6 max-w-[54ch] text-body text-label-2">
+          Every claim is a market that never closes. People and constrained AI agents trade on it, and confidential AI keeps its encyclopedia page current as the price and the evidence change.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center gap-5">
+          <Link href="/markets" className={buttonPrimary}>
+            Explore markets
           </Link>
-        ) : (
-          <p className="text-fade">No markets yet.</p>
-        )}
+          <Link href="/how-it-works" className="inline-flex items-center gap-0.5 text-sub text-tint hover:underline">
+            How it works <ChevronRight size={16} aria-hidden />
+          </Link>
+        </div>
       </section>
 
-      <section className="grid gap-12 py-12 lg:grid-cols-[1.6fr_1fr]">
-        <div>
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-xl font-semibold">Claims</h2>
-            <Link href="/markets" className="text-sm text-ledger underline decoration-rule">
-              All markets
-            </Link>
+      {featured && (
+        <section aria-labelledby="featured-h" className="border-t hairline pt-8 pb-14">
+          <p className="text-footnote font-medium text-label-2">Most traded</p>
+          <Link href={`/markets/${featured.slug}`} id="featured-h" className="mt-1 block max-w-[40ch] text-title3 font-semibold hover:text-tint">
+            {featured.question}
+          </Link>
+          <div className="mt-6">
+            <PriceChart points={history} currentPpm={featured.probabilityYesPpm} height={260} asOf={asOf} />
           </div>
-          <MarketTable markets={markets.slice(0, 5)} compact />
-        </div>
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">Latest trades</h2>
-          <div className="border-t border-ink">
+        </section>
+      )}
+
+      <div className="grid gap-x-14 gap-y-14 border-t hairline pt-10 lg:grid-cols-[1.5fr_1fr]">
+        <section aria-labelledby="claims-h">
+          <SectionHeader id="claims-h" title="Claims" action={{ href: "/markets", label: "See all" }} />
+          <MarketList markets={markets.slice(0, 6)} compact />
+        </section>
+        <section aria-labelledby="trades-h">
+          <SectionHeader id="trades-h" title="Latest trades" />
+          <div className="border-t hairline">
             <TradeTape trades={activity} showMarket empty="No trades yet. The first one sets the tape running." />
           </div>
-        </div>
+        </section>
+      </div>
+
+      <section aria-labelledby="how-h" className="mt-16 border-t hairline pt-10">
+        <SectionHeader id="how-h" title="How a claim moves" action={{ href: "/how-it-works", label: "Learn more" }} />
+        <p className="mb-8 max-w-[60ch] text-sub text-label-2">From a deposit to a revised encyclopedia page, in the order it happens.</p>
+        <Steps />
       </section>
 
-      <section className="border-t border-ink py-12">
-        <h2 className="mb-2 text-xl font-semibold">How a claim moves</h2>
-        <p className="mb-8 max-w-[60ch] text-fade">From a deposit to a revised encyclopedia page, in the order it happens.</p>
-        <HowItWorksSteps />
-        <Link href="/how-it-works" className="mt-6 inline-block text-sm text-ledger underline decoration-rule">
-          Read the full explanation
-        </Link>
-      </section>
-
-      <section className="border-t border-ink py-12">
-        <h2 className="mb-4 text-xl font-semibold">Encyclopedia</h2>
+      <section aria-labelledby="ency-h" className="mt-16 border-t hairline pt-10">
+        <SectionHeader id="ency-h" title="Encyclopedia" />
         {written.length ? (
-          <ul className="grid gap-6 md:grid-cols-2">
+          <ul className="divide-y hairline border-y hairline">
             {written.slice(0, 4).map(({ m, e }) => (
-              <li key={m.id} className="border-t border-rule pt-4">
-                <Link href={`/markets/${m.slug}#article`} className="font-medium hover:underline">
+              <li key={m.id} className="py-4">
+                <Link href={`/markets/${m.slug}#article`} className="text-body font-medium hover:text-tint">
                   {m.question}
                 </Link>
-                <p className="mt-2 line-clamp-3 text-sm text-fade">{String((e!.current!.content as { overview?: { body?: string } }).overview?.body ?? "")}</p>
-                <p className="mt-2 text-xs text-fade">
-                  Revision {e!.current!.revisionNumber}, written at {pct(e!.current!.priceYesPpm)} yes
+                <p className="mt-1 line-clamp-2 max-w-[70ch] text-sub text-label-2">{String((e!.current!.content as { overview?: { body?: string } }).overview?.body ?? "")}</p>
+                <p className="mt-1 text-footnote text-label-3">
+                  Revision {e!.current!.revisionNumber}, written at {pct(e!.current!.priceYesPpm)} Yes
                 </p>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="max-w-[60ch] text-fade">No pages written yet. Each claim gets its first page once Scout has gathered verified evidence and Scribe runs on NEAR AI Cloud.</p>
+          <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Each claim gets its first page once Scout has gathered verified evidence and Scribe runs on NEAR AI Cloud.</p>
         )}
       </section>
     </>

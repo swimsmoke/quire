@@ -25,6 +25,7 @@ export interface Market {
   humanTraders: number;
   agentTraders: number;
   lastTradeAt: string | null;
+  change24hPpm: number;
   createdAt: string;
 }
 

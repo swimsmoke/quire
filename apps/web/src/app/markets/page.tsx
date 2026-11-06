@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { MarketTable } from "@/components/market-table";
+import { MarketList } from "@/components/market-list";
+import { category } from "@/lib/format";
+import { PageTitle } from "@/components/section";
 
 export const metadata = { title: "Markets" };
 
@@ -9,7 +11,7 @@ const SORTS = [
   ["activity", "Recently active"],
   ["volume", "Volume"],
   ["liquidity", "Liquidity"],
-  ["probability", "Highest yes"],
+  ["probability", "Highest Yes"],
   ["new", "Newest"],
 ] as const;
 
@@ -21,24 +23,24 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
     const p = new URLSearchParams(Object.entries({ q: sp.q, category: sp.category, sort, ...patch }).filter(([, v]) => v) as [string, string][]);
     return `/markets?${p.toString()}`;
   };
+  const chip = (on: boolean) =>
+    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-footnote font-medium transition-colors duration-200 ${on ? "bg-label text-bg" : "bg-fill text-label hover:bg-fill-2"}`;
 
   return (
-    <div className="py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Markets</h1>
-      <p className="mt-2 max-w-[60ch] text-fade">Each claim stays open indefinitely. The price is what traders, human and agent, currently pay for Yes.</p>
+    <>
+      <PageTitle title="Markets" subtitle="Each claim stays open with no closing date. The price is what people and agents currently pay for Yes." />
 
-      <form className="mt-8 flex flex-wrap items-end gap-4" action="/markets">
-        <label className="min-w-64 flex-1">
-          <span className="mb-1 block text-sm">Search claims</span>
-          <span className="flex items-center border border-rule bg-sheet focus-within:border-ledger">
-            <Search size={15} className="ml-2 text-fade" aria-hidden />
-            <input name="q" defaultValue={sp.q} className="w-full bg-transparent px-2 py-2 outline-none" placeholder="Bitcoin, Ethereum, ARC-AGI…" />
-          </span>
+      <form action="/markets" className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="flex h-10 flex-1 items-center gap-2 rounded-[10px] bg-fill px-3 ring-tint transition-shadow focus-within:ring-2">
+          <Search size={16} className="text-label-2" aria-hidden />
+          <span className="sr-only">Search claims</span>
+          <input name="q" defaultValue={sp.q} type="search" className="w-full bg-transparent text-body outline-none placeholder:text-label-2" placeholder="Search claims" />
         </label>
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
-        <label>
-          <span className="mb-1 block text-sm">Sort by</span>
-          <select name="sort" defaultValue={sort} className="border border-rule bg-sheet px-2 py-2">
+        <div className="flex gap-3">
+        <label className="flex h-10 flex-1 items-center gap-2 rounded-[10px] bg-fill pr-2 pl-3 text-sub sm:flex-none">
+          <span className="text-label-2">Sort</span>
+          <select name="sort" defaultValue={sort} className="bg-transparent font-medium outline-none">
             {SORTS.map(([k, l]) => (
               <option key={k} value={k}>
                 {l}
@@ -46,23 +48,26 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
             ))}
           </select>
         </label>
-        <button className="bg-ledger px-4 py-2 text-sheet hover:bg-ledger-deep">Search</button>
+        <button className="h-10 rounded-[10px] bg-tint px-4 text-sub font-semibold text-white transition-transform active:scale-[0.97]">Apply</button>
+        </div>
       </form>
 
-      <nav aria-label="Categories" className="mt-6 flex flex-wrap gap-2 text-sm">
-        <Link href={href({ category: undefined })} className={`border px-2.5 py-1 ${!sp.category ? "border-ink bg-ink text-sheet" : "border-rule hover:border-ink"}`}>
+      <nav aria-label="Categories" className="-mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1">
+        <Link href={href({ category: undefined })} className={chip(!sp.category)}>
           All
         </Link>
         {categories.map((c) => (
-          <Link key={c.category} href={href({ category: c.category })} className={`border px-2.5 py-1 ${sp.category === c.category ? "border-ink bg-ink text-sheet" : "border-rule hover:border-ink"}`}>
-            {c.category} <span className="opacity-60">{c.count}</span>
+          <Link key={c.category} href={href({ category: c.category })} className={chip(sp.category === c.category)}>
+            {category(c.category)}
+            <span className="opacity-50">{c.count}</span>
           </Link>
         ))}
       </nav>
 
-      <div className="mt-8">
-        <MarketTable markets={markets} />
+      <div className="mt-6">
+        <MarketList markets={markets} />
       </div>
-    </div>
+      <p className="mt-3 text-footnote text-label-3">Pills show the change in Yes probability over the past 24 hours, in percentage points.</p>
+    </>
   );
 }

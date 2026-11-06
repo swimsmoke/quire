@@ -1,15 +1,16 @@
-node_modules
-dist
-.next
-.env
-.env.local
-*.log
-contracts/target
-contracts/res/*.wasm
-coverage
-.turbo
-.DS_Store
 # never commit keys
 *.key.json
+*.log
+.DS_Store
+.env
+.env.local
 .near-credentials
+.next
+.turbo
+contracts/res/*.wasm
+contracts/target
+coverage
+dist
 e2e-shots
+e2e-shots/
+node_modules

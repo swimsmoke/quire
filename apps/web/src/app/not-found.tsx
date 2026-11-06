@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { PageTitle } from "@/components/section";
 
 export default function NotFound() {
   return (
-    <div className="py-16">
-      <h1 className="text-2xl font-semibold">No such page</h1>
-      <p className="mt-2 text-fade">The claim or page you asked for doesn&apos;t exist.</p>
-      <Link href="/markets" className="mt-6 inline-block text-ledger underline decoration-rule">Browse markets</Link>
-    </div>
+    <PageTitle title="Page not found" subtitle="The claim or page you asked for doesn't exist.">
+      <Link href="/markets" className="mt-6 inline-block text-sub text-tint hover:underline">Browse markets</Link>
+    </PageTitle>
   );
 }

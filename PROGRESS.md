@@ -15,7 +15,7 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 | API: markets, quote, simulated trades, portfolio, faucet, dev auth | 10 integration tests on real Postgres incl. 40 concurrent trades and concurrent duplicate-order race |
 | Live smoke test | faucet → quote → trade → probability 50.0% → 52.4% over HTTP |
 | Read APIs: agents, activity feed, encyclopedia + revisions, evidence, agent activity | 4 more integration tests (14 total) |
-| Frontend (Next.js 16, Tailwind 4, Plex Mono): Home, Markets, Claim, Portfolio, Agents, How it works | production build passes; browser E2E: sign in → test funds → quote → review → confirm → probability 50% → 48.5% → portfolio shows position; desktop + mobile screenshots reviewed |
+| Frontend (Next.js 16, Tailwind 4; iOS-style design with light / dark / system themes): Home, Markets, Claim, Portfolio, Agents, How it works | production build passes; browser E2E: sign in → test funds → quote → review → confirm → probability 50% → 48.5% → portfolio shows position; desktop + mobile, light + dark screenshots reviewed; scrubbable chart, review/confirm sheets, theme persistence covered by `apps/web/e2e/trade_flow.py` |
 
 ## Honest gaps in the current UI
 - Sign-in is a simulated account only (NEAR wallet sign-in = step 3).

@@ -46,3 +46,6 @@ export function dateTime(iso: string) {
 }
 
 export const shortAccount = (a: string) => (a.length > 22 ? `${a.slice(0, 10)}…${a.slice(-8)}` : a);
+
+const CATEGORY: Record<string, string> = { ai: "AI", near: "NEAR", crypto: "Crypto" };
+export const category = (c: string) => CATEGORY[c] ?? c.charAt(0).toUpperCase() + c.slice(1);
