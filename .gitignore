@@ -12,3 +12,4 @@ coverage
 # never commit keys
 *.key.json
 .near-credentials
+e2e-shots

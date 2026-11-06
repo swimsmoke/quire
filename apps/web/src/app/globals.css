@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font-sans: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --color-vellum: #e9e1cd; /* page */
+  --color-sheet: #f2ecdd; /* raised leaf */
+  --color-ink: #322e25; /* primary text */
+  --color-fade: #6f6756; /* secondary text */
+  --color-rule: #cdbf9f; /* soft borders */
+  --color-ledger: #1e4d8c; /* actions, YES */
+  --color-ledger-deep: #173d70;
+  --color-umber: #8a4b2a; /* NO */
+  --color-sim: #8a6d1e; /* simulated-mode marker */
+
+  /* type scale: 12 / 14 / 16 / 20 / 28 / 44 / 72 / 120 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.75rem;
+  --text-3xl: 4.5rem;
+  --text-4xl: 7.5rem;
+}
+
+@layer base {
+  html {
+    background: var(--color-vellum);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-feature-settings: "zero" 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  ::selection {
+    background: var(--color-ledger);
+    color: var(--color-sheet);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ledger);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The one orchestrated moment: the hero ink line draws itself once. */
+@keyframes ink-draw {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.ink-draw {
+  stroke-dasharray: var(--len);
+  animation: ink-draw 1.6s cubic-bezier(0.6, 0, 0.2, 1) both;
+}

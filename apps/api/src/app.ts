@@ -9,6 +9,7 @@ import { TradeError } from "./market/engine.js";
 import { marketRoutes } from "./routes/markets.js";
 import { authRoutes } from "./routes/auth.js";
 import { portfolioRoutes } from "./routes/portfolio.js";
+import { knowledgeRoutes } from "./routes/knowledge.js";
 import type { config as Config } from "./config.js";
 
 export type AppConfig = typeof Config;
@@ -82,5 +83,6 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean 
   await app.register(authRoutes);
   await app.register(marketRoutes);
   await app.register(portfolioRoutes);
+  await app.register(knowledgeRoutes);
   return app;
 }
