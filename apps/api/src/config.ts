@@ -15,14 +15,16 @@ const Env = z.object({
 
   /** SIMULATED: trades execute against the Postgres ledger (clearly labelled).
    *  ONCHAIN_TESTNET: trades are signed by the user's wallet against the NEAR contract and ingested from tx results. */
-  QUIRE_EXECUTION_MODE: z.enum(["SIMULATED", "ONCHAIN_TESTNET"]).default("SIMULATED"),
+  QUIRE_EXECUTION_MODE: z.enum(["SIMULATED", "ONCHAIN_TESTNET", "ONCHAIN_MAINNET"]).default("SIMULATED"),
   /** Allows passwordless *.sim accounts. Never enable with ONCHAIN modes. */
   QUIRE_DEV_AUTH: bool,
 
-  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("testnet"),
-  NEAR_RPC_URL: z.string().url().default("https://test.rpc.fastnear.com"),
+  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("mainnet"),
+  NEAR_RPC_URL: z.string().url().default("https://rpc.mainnet.fastnear.com"),
+  /** Collateral token. Mainnet: Circle native USDC on NEAR. */
+  QUIRE_COLLATERAL_TOKEN: z.string().default("17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1"),
+  QUIRE_COLLATERAL_SYMBOL: z.string().default("USDC"),
   QUIRE_MARKET_CONTRACT: z.string().optional(),
-  QUIRE_QUSD_CONTRACT: z.string().optional(),
 
   NEAR_AI_API_KEY: z.string().optional(),
   NEAR_AI_BASE_URL: z.string().url().default("https://cloud-api.near.ai/v1"),

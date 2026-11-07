@@ -1,0 +1,95 @@
+name: deploy-mainnet
+
+# Manual only: Actions tab -> deploy-mainnet -> Run workflow.
+# Needs the GitHub environment "mainnet" with secret QUIRE_CONTRACT_PRIVATE_KEY
+# (full-access key of the CONTRACT account, format ed25519:...). See docs/DEPLOY_MAINNET.md.
+on:
+  workflow_dispatch:
+    inputs:
+      contract_account_id:
+        description: "Account the contract is deployed to (holds ~4 NEAR for storage)"
+        required: true
+      owner_account_id:
+        description: "Owner / resolver / liquidity account (your main wallet)"
+        required: true
+      initialize:
+        description: "First deploy? Runs new(...) once. Leave false for upgrades."
+        type: boolean
+        default: true
+      account_cap_usdc:
+        description: "Max USDC per account (safety cap)"
+        default: "25"
+      tvl_cap_usdc:
+        description: "Max USDC held by the contract in total (safety cap)"
+        default: "200"
+      challenge_period_hours:
+        description: "Resolution challenge window"
+        default: "24"
+
+concurrency: deploy-mainnet
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: mainnet
+    env:
+      USDC: "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1"
+      NEAR_CLI_VERSION: "0.31.1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+
+      - name: Tests must pass before any deploy
+        run: cd contracts && cargo test
+
+      - name: Install cargo-near and near CLI
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/near-cli-rs/releases/download/v${NEAR_CLI_VERSION}/near-cli-rs-installer.sh | sh
+
+      - name: Build wasm
+        run: chmod +x contracts/build.sh && contracts/build.sh
+
+      - name: Validate inputs
+        env:
+          CONTRACT: ${{ inputs.contract_account_id }}
+          OWNER: ${{ inputs.owner_account_id }}
+        run: |
+          re='^(([a-z0-9]+[-_])*[a-z0-9]+\.)*([a-z0-9]+[-_])*[a-z0-9]+$'
+          [[ "$CONTRACT" =~ $re && "$OWNER" =~ $re ]] || { echo "invalid account id"; exit 1; }
+          [[ "$CONTRACT" != "$OWNER" ]] || { echo "use a separate contract account"; exit 1; }
+          near account view-account-summary "$CONTRACT" network-config mainnet now
+          near account view-account-summary "$OWNER" network-config mainnet now
+
+      - name: Deploy
+        env:
+          CONTRACT: ${{ inputs.contract_account_id }}
+          OWNER: ${{ inputs.owner_account_id }}
+          INIT: ${{ inputs.initialize }}
+          ACCOUNT_CAP: ${{ inputs.account_cap_usdc }}
+          TVL_CAP: ${{ inputs.tvl_cap_usdc }}
+          HOURS: ${{ inputs.challenge_period_hours }}
+          KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          [[ -n "$KEY" ]] || { echo "secret QUIRE_CONTRACT_PRIVATE_KEY missing"; exit 1; }
+          to_units() { python3 -c "from decimal import Decimal as D; import sys; v=D(sys.argv[1]); assert v>0; print(int(v*10**6))" "$1"; }
+          WASM=contracts/res/quire-market.wasm
+          ls -la "$WASM"
+          if [[ "$INIT" == "true" ]]; then
+            ARGS=$(python3 -c "import json,sys; print(json.dumps({'owner_id':sys.argv[1],'resolver_id':sys.argv[1],'collateral_token':sys.argv[2],'challenge_period_ns':str(int(sys.argv[3])*3600*10**9),'account_cap':sys.argv[4],'tvl_cap':sys.argv[5]}))" \
+              "$OWNER" "$USDC" "$HOURS" "$(to_units "$ACCOUNT_CAP")" "$(to_units "$TVL_CAP")")
+            echo "init args: $ARGS"
+            near contract deploy "$CONTRACT" use-file "$WASM" with-init-call new json-args "$ARGS" \
+              prepaid-gas '100 Tgas' attached-deposit '0 NEAR' \
+              network-config mainnet sign-with-plaintext-private-key "$KEY" send
+          else
+            near contract deploy "$CONTRACT" use-file "$WASM" without-init-call \
+              network-config mainnet sign-with-plaintext-private-key "$KEY" send
+          fi
+          near contract call-function as-read-only "$CONTRACT" get_config json-args '{}' network-config mainnet now

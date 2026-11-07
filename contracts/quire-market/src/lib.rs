@@ -191,6 +191,9 @@ pub struct Config {
     pub challenge_period_ns: U64,
     pub paused: bool,
     pub market_count: u32,
+    pub account_cap: U128,
+    pub tvl_cap: U128,
+    pub total_collateral: U128,
     pub storage_byte_cost: U128,
     pub account_storage_bytes: U64,
     pub position_storage_bytes: U64,
@@ -237,6 +240,11 @@ pub struct QuireMarket {
     accounts: LookupMap<AccountId, Account>,
     positions: LookupMap<PositionKey, Position>,
     orders: LookupSet<Vec<u8>>,
+    /// Real-money safety rails (owner-set): max collateral per account and in total.
+    account_cap: u128,
+    tvl_cap: u128,
+    /// Collateral the contract accounts for: deposits minus withdrawals.
+    total_collateral: u128,
 }
 
 fn emit(event: &str, data: serde_json::Value) {
@@ -256,7 +264,14 @@ fn fpmm_err(e: fpmm::FpmmError) -> ! {
 #[near]
 impl QuireMarket {
     #[init]
-    pub fn new(owner_id: AccountId, resolver_id: AccountId, collateral_token: AccountId, challenge_period_ns: U64) -> Self {
+    pub fn new(
+        owner_id: AccountId,
+        resolver_id: AccountId,
+        collateral_token: AccountId,
+        challenge_period_ns: U64,
+        account_cap: U128,
+        tvl_cap: U128,
+    ) -> Self {
         Self {
             owner_id,
             resolver_id,
@@ -267,6 +282,9 @@ impl QuireMarket {
             accounts: LookupMap::new(StorageKey::Accounts),
             positions: LookupMap::new(StorageKey::Positions),
             orders: LookupSet::new(StorageKey::Orders),
+            account_cap: account_cap.0,
+            tvl_cap: tvl_cap.0,
+            total_collateral: 0,
         }
     }
 
@@ -312,10 +330,17 @@ impl QuireMarket {
                 Err(_) => return PromiseOrValue::Value(amount),
             }
         };
+        let (account_cap, tvl_cap, total) = (self.account_cap, self.tvl_cap, self.total_collateral);
         let Some(acc) = self.accounts.get_mut(&recipient) else {
             return PromiseOrValue::Value(amount);
         };
+        // Caps: refund the whole deposit rather than partially accept it.
+        if acc.balance + amount.0 > account_cap || total + amount.0 > tvl_cap {
+            emit("deposit_refused", json!({ "account_id": recipient, "amount": amount, "reason": "cap" }));
+            return PromiseOrValue::Value(amount);
+        }
         acc.balance += amount.0;
+        self.total_collateral += amount.0;
         emit("deposit", json!({ "account_id": recipient, "sender_id": sender_id, "amount": amount }));
         PromiseOrValue::Value(U128(0))
     }
@@ -329,6 +354,7 @@ impl QuireMarket {
         require!(acc.agent.is_none(), "ERR_AGENT_CANNOT_WITHDRAW");
         require!(amount.0 > 0 && acc.balance >= amount.0, "ERR_INSUFFICIENT_BALANCE");
         acc.balance -= amount.0;
+        self.total_collateral -= amount.0;
         emit("withdraw_started", json!({ "account_id": account_id, "amount": amount }));
         ext_ft::ext(self.collateral_token.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -346,6 +372,7 @@ impl QuireMarket {
             if let Some(acc) = self.accounts.get_mut(&account_id) {
                 acc.balance += amount.0;
             }
+            self.total_collateral += amount.0;
             emit("withdraw_failed", json!({ "account_id": account_id, "amount": amount }));
             false
         }
@@ -423,6 +450,13 @@ impl QuireMarket {
         self.assert_owner();
         self.paused = paused;
         emit("contract_paused", json!({ "paused": paused }));
+    }
+
+    pub fn set_caps(&mut self, account_cap: U128, tvl_cap: U128) {
+        self.assert_owner();
+        self.account_cap = account_cap.0;
+        self.tvl_cap = tvl_cap.0;
+        emit("caps_updated", json!({ "account_cap": account_cap, "tvl_cap": tvl_cap }));
     }
 
     pub fn set_resolver(&mut self, resolver_id: AccountId) {
@@ -675,6 +709,9 @@ impl QuireMarket {
             challenge_period_ns: U64(self.challenge_period_ns),
             paused: self.paused,
             market_count: self.markets.len(),
+            account_cap: U128(self.account_cap),
+            tvl_cap: U128(self.tvl_cap),
+            total_collateral: U128(self.total_collateral),
             storage_byte_cost: U128(env::storage_byte_cost().as_yoctonear()),
             account_storage_bytes: U64(ACCOUNT_STORAGE_BYTES),
             position_storage_bytes: U64(POSITION_STORAGE_BYTES),

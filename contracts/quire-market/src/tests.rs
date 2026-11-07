@@ -51,7 +51,7 @@ fn deposit(c: &mut QuireMarket, a: AccountId, amount: u128) {
 
 fn setup() -> QuireMarket {
     ctx(owner(), NearToken::from_yoctonear(0), 0);
-    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000));
+    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
     register(&mut c, owner());
     deposit(&mut c, owner(), 100_000 * Q);
     for u in [alice(), bob()] {
@@ -416,7 +416,7 @@ fn invalid_resolution_pays_half_per_share() {
 #[should_panic(expected = "ERR_INSUFFICIENT_STORAGE")]
 fn storage_must_cover_new_positions() {
     ctx(owner(), NearToken::from_yoctonear(0), 0);
-    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000));
+    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
     register(&mut c, owner());
     deposit(&mut c, owner(), 100_000 * Q);
     as_view(owner());
@@ -430,4 +430,57 @@ fn storage_must_cover_new_positions() {
     deposit(&mut c, alice(), 100 * Q);
     as_user(alice());
     c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+}
+
+// ---------- real-money safety caps ----------
+
+#[test]
+fn deposit_over_account_cap_is_refunded_in_full() {
+    let mut c = setup();
+    as_view(owner());
+    c.set_caps(U128(1_500 * Q), U128(10_000_000 * Q));
+    ctx(token(), NearToken::from_yoctonear(0), 0);
+    match c.ft_on_transfer(alice(), U128(600 * Q), String::new()) {
+        PromiseOrValue::Value(v) => assert_eq!(v.0, 600 * Q, "whole deposit refunded"),
+        _ => panic!(),
+    }
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 1_000 * Q);
+    let _ = c.ft_on_transfer(alice(), U128(500 * Q), String::new());
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 1_500 * Q);
+}
+
+#[test]
+fn deposit_over_tvl_cap_is_refunded() {
+    let mut c = setup();
+    let total = c.get_config().total_collateral.0;
+    assert_eq!(total, 102_000 * Q);
+    as_view(owner());
+    c.set_caps(U128(1_000_000 * Q), U128(total + 10 * Q));
+    ctx(token(), NearToken::from_yoctonear(0), 0);
+    match c.ft_on_transfer(bob(), U128(11 * Q), String::new()) {
+        PromiseOrValue::Value(v) => assert_eq!(v.0, 11 * Q),
+        _ => panic!(),
+    }
+    let _ = c.ft_on_transfer(bob(), U128(10 * Q), String::new());
+    assert_eq!(c.get_config().total_collateral.0, total + 10 * Q);
+}
+
+#[test]
+fn withdrawals_work_while_paused_and_reduce_total() {
+    let mut c = setup();
+    as_view(owner());
+    c.set_paused(true);
+    let before = c.get_config().total_collateral.0;
+    as_user(alice());
+    let _ = c.withdraw(U128(100 * Q));
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, 900 * Q);
+    assert_eq!(c.get_config().total_collateral.0, before - 100 * Q);
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_OWNER")]
+fn only_owner_sets_caps() {
+    let mut c = setup();
+    as_view(alice());
+    c.set_caps(U128(1), U128(1));
 }

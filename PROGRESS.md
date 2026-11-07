@@ -22,6 +22,12 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 - Cross-chain deposit panel states NEAR Intents is not connected; nothing can be started.
 - Encyclopedia, evidence and agent activity show empty states until steps 4-5 generate real data.
 
+## Network decision (7 Nov): mainnet, real USDC (option B)
+- Collateral: Circle native USDC on NEAR. qUSD remains only for local tests.
+- Contract safety caps added (per-account and total), deposits over cap refunded; 4 tests.
+- Manual GitHub Action `deploy-mainnet` (tests, build, deploy, init) using an environment secret.
+- Guide: docs/DEPLOY_MAINNET.md.
+
 ## ⚠️ Not yet verified in this workspace
 
 - **Contract wasm build + testnet deploy**: this workspace cannot download the wasm Rust target. CI workflow (`.github/workflows/ci.yml`) builds it on GitHub, or run `contracts/build.sh` locally.
