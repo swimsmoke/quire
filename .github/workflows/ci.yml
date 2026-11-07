@@ -39,6 +39,7 @@ jobs:
           --health-cmd "pg_isready -U quire" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://quire:quire@localhost:5432/quire_test
+      TEST_DATABASE_URL: postgresql://quire:quire@localhost:5432/quire_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -47,6 +48,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @quire/api exec prisma migrate deploy
+      - run: pnpm --filter @quire/api db:migrate
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm --filter @quire/web build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

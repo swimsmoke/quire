@@ -9,7 +9,7 @@ The contract is **unaudited**, so it ships with safety caps and every amount bel
 | Item | Purpose | Rough amount |
 |---|---|---|
 | **Main account** (your wallet) | Contract owner, resolver, market liquidity provider | ~0.5 NEAR for gas/storage + USDC for liquidity |
-| **Contract account** (a separate, new account) | Holds the contract code | ~4 NEAR (storage for the code; check the exact wasm size in the CI artifact, about 1 NEAR per 100 KB) |
+| **Contract account** (a separate, new account) | Holds the contract code | 3.5 NEAR (the code is 261,917 bytes = 2.62 NEAR of storage at 1 NEAR per 100 KB, plus headroom) |
 | **Two demo accounts** | Two-wallet demo | ~0.1 NEAR each + 1-2 USDC each |
 | **USDC on NEAR** | Market liquidity and trades | 2 USDC per market is the practical minimum; 3 markets = 6 USDC |
 
@@ -19,7 +19,7 @@ and redeem the pool, which returns the liquidity minus any trading losses.
 ## Steps
 
 1. **Create the accounts** in any NEAR wallet listed at wallet.near.org (mainnet, not testnet).
-   Fund the contract account with ~4 NEAR and the others as above.
+   Fund the contract account with 3.5 NEAR and the others as above.
 2. **Export the contract account's private key** from its wallet (it starts with `ed25519:`).
    Never paste it into chat, an issue, or a commit.
 3. **Store it in GitHub**: repo Settings -> Environments -> New environment `mainnet`

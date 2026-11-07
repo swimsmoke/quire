@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       contract_account_id:
-        description: "Account the contract is deployed to (holds ~4 NEAR for storage)"
+        description: "Account the contract is deployed to (holds 3.5 NEAR for storage)"
         required: true
       owner_account_id:
         description: "Owner / resolver / liquidity account (your main wallet)"
