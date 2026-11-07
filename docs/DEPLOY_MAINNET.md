@@ -9,7 +9,7 @@ The contract is **unaudited**, so it ships with safety caps and every amount bel
 | Account | Purpose | Fund with |
 |---|---|---|
 | **Main** (your wallet) | Contract owner, resolver, market liquidity provider | 3.5 NEAR: 0.5 for fees and storage + 1 NEAR of liquidity for each of 3 markets |
-| **Contract** (a separate, new account) | Holds the contract code | 3.5 NEAR: the code is about 262 KB, which locks about 2.6 NEAR of storage (1 NEAR per 100 KB), plus headroom |
+| **Contract** (a separate, new account) | Holds the contract code | 3.5 NEAR: the code is 250 KB, which locks about 2.5 NEAR of storage (1 NEAR per 100 KB), plus headroom |
 | **Demo 1**, **Demo 2** | Two-wallet demo | 1 NEAR each |
 
 About 9 NEAR in total. Market liquidity is not lost: after the hackathon the owner can resolve each
