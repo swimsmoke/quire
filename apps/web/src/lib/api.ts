@@ -61,7 +61,7 @@ export function humanError(code?: string): string | undefined {
     case "SLIPPAGE":
       return "The price moved past your slippage limit. Get a new quote and try again.";
     case "INSUFFICIENT_BALANCE":
-      return "Your qUSD balance is too low for this trade. Add funds or lower the amount.";
+      return "Your NEAR balance is too low for this trade. Add funds or lower the amount.";
     case "INSUFFICIENT_SHARES":
       return "You don't hold that many shares in this outcome.";
     case "DUPLICATE_ORDER":

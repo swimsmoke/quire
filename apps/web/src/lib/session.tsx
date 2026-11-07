@@ -12,7 +12,7 @@ interface SessionCtx {
   token: string | null;
   me: Me | null;
   ready: boolean;
-  balance: string; // available qUSD (base units) in the active execution mode
+  balance: string; // available NEAR (base units) in the active execution mode
   signInSimulated: (handle: string) => Promise<void>;
   signOut: () => void;
   refresh: () => Promise<void>;

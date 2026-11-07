@@ -1,7 +1,9 @@
 //! Quire market contract — perpetual binary claim markets priced by an FPMM.
 //!
-//! Collateral: a NEP-141 token (qUSD on testnet) deposited with ft_transfer_call.
-//! Accounts register storage (NEP-145 style) before depositing.
+//! Collateral: native NEAR. Internally amounts are micro-NEAR (1 unit = 10^-6 NEAR
+//! = 10^18 yoctoNEAR), so the integer FPMM math is unchanged. A winning share pays 1 NEAR.
+//! The first deposit registers the account; storage for new records is paid from the
+//! account's own balance, so trades never fail for lack of a separate storage deposit.
 //!
 //! Security model (see docs/SECURITY.md):
 //! - Human trades and withdrawals require 1 yoctoNEAR => full-access-key wallet confirmation.
@@ -21,10 +23,7 @@ use fpmm::{Pool, Side};
 use near_sdk::json_types::{U128, U64};
 use near_sdk::serde_json::{self, json};
 use near_sdk::store::{LookupMap, LookupSet, Vector};
-use near_sdk::{
-    env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
-    PromiseError, PromiseOrValue,
-};
+use near_sdk::{env, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise, PromiseError};
 
 pub const EVENT_STANDARD: &str = "quire";
 pub const EVENT_VERSION: &str = "1.0.0";
@@ -40,8 +39,10 @@ const MAX_CATEGORY_LEN: usize = 32;
 const MAX_ORDER_ID_LEN: usize = 64;
 const MAX_URI_LEN: usize = 300;
 
-const GAS_FT_TRANSFER: Gas = Gas::from_tgas(10);
 const GAS_CALLBACK: Gas = Gas::from_tgas(10);
+
+/// yoctoNEAR per internal unit (1 unit = 1 micro-NEAR).
+pub const YOCTO_PER_UNIT: u128 = 1_000_000_000_000_000_000;
 
 #[derive(BorshStorageKey)]
 #[near]
@@ -187,7 +188,8 @@ pub struct StorageBalance {
 pub struct Config {
     pub owner_id: AccountId,
     pub resolver_id: AccountId,
-    pub collateral_token: AccountId,
+    pub collateral: String,
+    pub yocto_per_unit: U128,
     pub challenge_period_ns: U64,
     pub paused: bool,
     pub market_count: u32,
@@ -217,23 +219,11 @@ pub struct SellQuoteView {
     pub price_yes_after_ppm: U128,
 }
 
-#[near(serializers = [json])]
-struct DepositMsg {
-    deposit_for: AccountId,
-}
-
-#[ext_contract(ext_ft)]
-#[allow(dead_code)]
-trait FungibleTokenCore {
-    fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
-}
-
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct QuireMarket {
     owner_id: AccountId,
     resolver_id: AccountId,
-    collateral_token: AccountId,
     challenge_period_ns: u64,
     paused: bool,
     markets: Vector<Market>,
@@ -267,7 +257,6 @@ impl QuireMarket {
     pub fn new(
         owner_id: AccountId,
         resolver_id: AccountId,
-        collateral_token: AccountId,
         challenge_period_ns: U64,
         account_cap: U128,
         tvl_cap: U128,
@@ -275,7 +264,6 @@ impl QuireMarket {
         Self {
             owner_id,
             resolver_id,
-            collateral_token,
             challenge_period_ns: challenge_period_ns.0,
             paused: false,
             markets: Vector::new(StorageKey::Markets),
@@ -317,35 +305,38 @@ impl QuireMarket {
 
     // ---------------- deposits & withdrawals ----------------
 
-    /// NEP-141 receiver. msg == "" credits the sender; msg == {"deposit_for": "<account>"}
-    /// credits another registered account. Unregistered recipients are refunded in full.
-    pub fn ft_on_transfer(&mut self, sender_id: AccountId, amount: U128, msg: String) -> PromiseOrValue<U128> {
-        require!(env::predecessor_account_id() == self.collateral_token, "ERR_WRONG_TOKEN");
+    /// Deposit the attached NEAR into the caller's trading balance.
+    /// Registers the caller on first use (storage is taken from the deposit).
+    /// Over-cap deposits fail and the attached NEAR is returned by the protocol.
+    #[payable]
+    pub fn deposit(&mut self) -> U128 {
         require!(!self.paused, "ERR_PAUSED");
-        let recipient = if msg.is_empty() {
-            sender_id.clone()
-        } else {
-            match serde_json::from_str::<DepositMsg>(&msg) {
-                Ok(m) => m.deposit_for,
-                Err(_) => return PromiseOrValue::Value(amount),
-            }
-        };
-        let (account_cap, tvl_cap, total) = (self.account_cap, self.tvl_cap, self.total_collateral);
-        let Some(acc) = self.accounts.get_mut(&recipient) else {
-            return PromiseOrValue::Value(amount);
-        };
-        // Caps: refund the whole deposit rather than partially accept it.
-        if acc.balance + amount.0 > account_cap || total + amount.0 > tvl_cap {
-            emit("deposit_refused", json!({ "account_id": recipient, "amount": amount, "reason": "cap" }));
-            return PromiseOrValue::Value(amount);
+        let account_id = env::predecessor_account_id();
+        let attached = env::attached_deposit().as_yoctonear();
+        let mut units = attached / YOCTO_PER_UNIT;
+        let dust = attached % YOCTO_PER_UNIT;
+        if self.accounts.get(&account_id).is_none() {
+            let fee_units = self.bytes_cost(ACCOUNT_STORAGE_BYTES).div_ceil(YOCTO_PER_UNIT);
+            require!(units > fee_units, "ERR_DEPOSIT_TOO_SMALL");
+            units -= fee_units;
+            let acc = Account { storage_deposit: fee_units * YOCTO_PER_UNIT, storage_used: ACCOUNT_STORAGE_BYTES, ..Default::default() };
+            self.accounts.insert(account_id.clone(), acc);
+            emit("account_registered", json!({ "account_id": account_id }));
         }
-        acc.balance += amount.0;
-        self.total_collateral += amount.0;
-        emit("deposit", json!({ "account_id": recipient, "sender_id": sender_id, "amount": amount }));
-        PromiseOrValue::Value(U128(0))
+        require!(units > 0, "ERR_ZERO_AMOUNT");
+        let (account_cap, tvl_cap, total) = (self.account_cap, self.tvl_cap, self.total_collateral);
+        let acc = self.accounts.get_mut(&account_id).unwrap();
+        require!(acc.agent.is_none(), "ERR_AGENT_USE_FUND_AGENT");
+        require!(acc.balance + units <= account_cap, "ERR_ACCOUNT_CAP");
+        require!(total + units <= tvl_cap, "ERR_TVL_CAP");
+        acc.balance += units;
+        acc.storage_deposit += dust; // sub-unit remainder becomes storage credit
+        self.total_collateral += units;
+        emit("deposit", json!({ "account_id": account_id, "amount": U128(units) }));
+        U128(acc.balance)
     }
 
-    /// Withdraw collateral to the caller's wallet. Requires 1 yoctoNEAR (full-access key).
+    /// Withdraw NEAR to the caller's wallet. Requires 1 yoctoNEAR (full-access key).
     #[payable]
     pub fn withdraw(&mut self, amount: U128) -> Promise {
         near_sdk::assert_one_yocto();
@@ -356,10 +347,8 @@ impl QuireMarket {
         acc.balance -= amount.0;
         self.total_collateral -= amount.0;
         emit("withdraw_started", json!({ "account_id": account_id, "amount": amount }));
-        ext_ft::ext(self.collateral_token.clone())
-            .with_attached_deposit(NearToken::from_yoctonear(1))
-            .with_static_gas(GAS_FT_TRANSFER)
-            .ft_transfer(account_id.clone(), amount, Some("quire withdraw".into()))
+        Promise::new(account_id.clone())
+            .transfer(NearToken::from_yoctonear(amount.0 * YOCTO_PER_UNIT))
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CALLBACK).on_withdraw(account_id, amount))
     }
 
@@ -705,7 +694,8 @@ impl QuireMarket {
         Config {
             owner_id: self.owner_id.clone(),
             resolver_id: self.resolver_id.clone(),
-            collateral_token: self.collateral_token.clone(),
+            collateral: "NEAR".to_string(),
+            yocto_per_unit: U128(YOCTO_PER_UNIT),
             challenge_period_ns: U64(self.challenge_period_ns),
             paused: self.paused,
             market_count: self.markets.len(),
@@ -820,11 +810,20 @@ impl QuireMarket {
         StorageBalance { total: U128(a.storage_deposit), available: U128(a.storage_deposit.saturating_sub(used)) }
     }
 
+    /// Reserve storage for a new record. If prepaid storage is used up, the shortfall
+    /// is moved from the account's NEAR balance into its storage deposit.
     fn reserve_storage(&mut self, account_id: &AccountId, bytes: u64) {
         let cost = env::storage_byte_cost().as_yoctonear();
         let acc = self.accounts.get_mut(account_id).unwrap_or_else(|| env::panic_str("ERR_NOT_REGISTERED"));
         acc.storage_used += bytes;
-        require!(cost * acc.storage_used as u128 <= acc.storage_deposit, "ERR_INSUFFICIENT_STORAGE");
+        let needed = cost * acc.storage_used as u128;
+        if needed > acc.storage_deposit {
+            let units = (needed - acc.storage_deposit).div_ceil(YOCTO_PER_UNIT);
+            require!(acc.balance >= units, "ERR_INSUFFICIENT_STORAGE");
+            acc.balance -= units;
+            acc.storage_deposit += units * YOCTO_PER_UNIT;
+            self.total_collateral -= units;
+        }
     }
 
     fn release_storage(&mut self, account_id: &AccountId, bytes: u64) {

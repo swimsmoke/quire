@@ -2,12 +2,9 @@ use super::*;
 use near_sdk::test_utils::{accounts, VMContextBuilder};
 use near_sdk::{testing_env, NearToken};
 
-const Q: u128 = 1_000_000; // 1 qUSD
+const Q: u128 = 1_000_000; // 1 NEAR in internal units (micro-NEAR)
 const STORAGE: NearToken = NearToken::from_millinear(50); // 0.05 NEAR
 
-fn token() -> AccountId {
-    "qusd.testnet".parse().unwrap()
-}
 fn owner() -> AccountId {
     accounts(0)
 }
@@ -40,18 +37,15 @@ fn register(c: &mut QuireMarket, a: AccountId) {
     ctx(a.clone(), STORAGE, 0);
     c.storage_deposit(None);
 }
+/// Deposit `amount` internal units of NEAR from `a`.
 fn deposit(c: &mut QuireMarket, a: AccountId, amount: u128) {
-    ctx(token(), NearToken::from_yoctonear(0), 0);
-    let r = c.ft_on_transfer(a, U128(amount), String::new());
-    match r {
-        PromiseOrValue::Value(v) => assert_eq!(v.0, 0, "deposit refunded"),
-        _ => panic!("unexpected promise"),
-    }
+    ctx(a, NearToken::from_yoctonear(amount * YOCTO_PER_UNIT), 0);
+    c.deposit();
 }
 
 fn setup() -> QuireMarket {
     ctx(owner(), NearToken::from_yoctonear(0), 0);
-    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
+    let mut c = QuireMarket::new(owner(), owner(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
     register(&mut c, owner());
     deposit(&mut c, owner(), 100_000 * Q);
     for u in [alice(), bob()] {
@@ -222,30 +216,33 @@ fn cannot_sell_shares_not_held() {
 }
 
 #[test]
-#[should_panic(expected = "ERR_WRONG_TOKEN")]
-fn rejects_deposits_from_other_tokens() {
+fn first_deposit_registers_and_pays_storage_from_the_deposit() {
     let mut c = setup();
-    as_view("evil.testnet".parse().unwrap());
-    let _ = c.ft_on_transfer(alice(), U128(Q), String::new());
+    let carol: AccountId = "carol.near".parse().unwrap();
+    deposit(&mut c, carol.clone(), 10 * Q);
+    let acc = c.get_account(carol).unwrap();
+    let fee_units = (env::storage_byte_cost().as_yoctonear() * ACCOUNT_STORAGE_BYTES as u128).div_ceil(YOCTO_PER_UNIT);
+    assert_eq!(acc.balance.0, 10 * Q - fee_units);
+    assert!(fee_units < Q / 100, "registration costs well under 0.01 NEAR");
 }
 
 #[test]
-fn unregistered_deposit_is_refunded() {
+fn sub_unit_dust_becomes_storage_credit() {
     let mut c = setup();
-    ctx(token(), NearToken::from_yoctonear(0), 0);
-    match c.ft_on_transfer("stranger.testnet".parse().unwrap(), U128(5 * Q), String::new()) {
-        PromiseOrValue::Value(v) => assert_eq!(v.0, 5 * Q),
-        _ => panic!(),
-    }
+    let before = c.get_account(alice()).unwrap();
+    ctx(alice(), NearToken::from_yoctonear(5 * YOCTO_PER_UNIT + 123), 0);
+    c.deposit();
+    let after = c.get_account(alice()).unwrap();
+    assert_eq!(after.balance.0, before.balance.0 + 5);
+    assert_eq!(after.storage_deposit.0, before.storage_deposit.0 + 123);
 }
 
 #[test]
-fn deposit_for_another_registered_account() {
+#[should_panic(expected = "ERR_DEPOSIT_TOO_SMALL")]
+fn first_deposit_must_exceed_registration_cost() {
     let mut c = setup();
-    ctx(token(), NearToken::from_yoctonear(0), 0);
-    let msg = format!(r#"{{"deposit_for":"{}"}}"#, bob());
-    let _ = c.ft_on_transfer(owner(), U128(7 * Q), msg);
-    assert_eq!(c.get_account(bob()).unwrap().balance.0, 1_007 * Q);
+    ctx("tiny.near".parse().unwrap(), NearToken::from_yoctonear(YOCTO_PER_UNIT), 0);
+    c.deposit();
 }
 
 #[test]
@@ -413,56 +410,50 @@ fn invalid_resolution_pays_half_per_share() {
 }
 
 #[test]
-#[should_panic(expected = "ERR_INSUFFICIENT_STORAGE")]
-fn storage_must_cover_new_positions() {
+fn storage_for_new_positions_is_paid_from_balance() {
     ctx(owner(), NearToken::from_yoctonear(0), 0);
-    let mut c = QuireMarket::new(owner(), owner(), token(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
-    register(&mut c, owner());
+    let mut c = QuireMarket::new(owner(), owner(), U64(1_000), U128(1_000_000 * Q), U128(10_000_000 * Q));
     deposit(&mut c, owner(), 100_000 * Q);
     as_view(owner());
-    for i in 0..3 {
-        c.create_market(format!("m{i}"), "q?".into(), "c".into(), U128(500_000), U128(100 * Q), 100);
-    }
-    // register alice with the bare minimum (account record only)
-    let min = NearToken::from_yoctonear(env::storage_byte_cost().as_yoctonear() * ACCOUNT_STORAGE_BYTES as u128);
-    ctx(alice(), min, 0);
-    c.storage_deposit(None);
-    deposit(&mut c, alice(), 100 * Q);
+    c.create_market("m0".into(), "q?".into(), "c".into(), U128(500_000), U128(100 * Q), 100);
+    deposit(&mut c, alice(), 100 * Q); // registers with exactly the account record prepaid
+    let before = c.get_account(alice()).unwrap();
     as_user(alice());
     c.buy(0, Outcome::Yes, U128(Q), U128(1), None);
+    let after = c.get_account(alice()).unwrap();
+    let storage_units = (env::storage_byte_cost().as_yoctonear() * POSITION_STORAGE_BYTES as u128).div_ceil(YOCTO_PER_UNIT);
+    assert_eq!(after.balance.0, before.balance.0 - Q - storage_units);
 }
 
 // ---------- real-money safety caps ----------
 
 #[test]
-fn deposit_over_account_cap_is_refunded_in_full() {
+#[should_panic(expected = "ERR_ACCOUNT_CAP")]
+fn deposit_over_account_cap_fails() {
     let mut c = setup();
     as_view(owner());
     c.set_caps(U128(1_500 * Q), U128(10_000_000 * Q));
-    ctx(token(), NearToken::from_yoctonear(0), 0);
-    match c.ft_on_transfer(alice(), U128(600 * Q), String::new()) {
-        PromiseOrValue::Value(v) => assert_eq!(v.0, 600 * Q, "whole deposit refunded"),
-        _ => panic!(),
-    }
-    assert_eq!(c.get_account(alice()).unwrap().balance.0, 1_000 * Q);
-    let _ = c.ft_on_transfer(alice(), U128(500 * Q), String::new());
+    deposit(&mut c, alice(), 600 * Q);
+}
+
+#[test]
+fn deposit_up_to_account_cap_succeeds() {
+    let mut c = setup();
+    as_view(owner());
+    c.set_caps(U128(1_500 * Q), U128(10_000_000 * Q));
+    deposit(&mut c, alice(), 500 * Q);
     assert_eq!(c.get_account(alice()).unwrap().balance.0, 1_500 * Q);
 }
 
 #[test]
-fn deposit_over_tvl_cap_is_refunded() {
+#[should_panic(expected = "ERR_TVL_CAP")]
+fn deposit_over_tvl_cap_fails() {
     let mut c = setup();
     let total = c.get_config().total_collateral.0;
     assert_eq!(total, 102_000 * Q);
     as_view(owner());
     c.set_caps(U128(1_000_000 * Q), U128(total + 10 * Q));
-    ctx(token(), NearToken::from_yoctonear(0), 0);
-    match c.ft_on_transfer(bob(), U128(11 * Q), String::new()) {
-        PromiseOrValue::Value(v) => assert_eq!(v.0, 11 * Q),
-        _ => panic!(),
-    }
-    let _ = c.ft_on_transfer(bob(), U128(10 * Q), String::new());
-    assert_eq!(c.get_config().total_collateral.0, total + 10 * Q);
+    deposit(&mut c, bob(), 11 * Q);
 }
 
 #[test]

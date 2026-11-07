@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bot, UserRound } from "lucide-react";
 import type { Trade } from "@/lib/types";
-import { ago, pct, qusd, shortAccount } from "@/lib/format";
+import { ago, pct, fmtNear, shortAccount } from "@/lib/format";
 import { ModeTag } from "./mode";
 
 export function TradeTape({ trades, showMarket = false, empty = "No trades yet." }: { trades: Trade[]; showMarket?: boolean; empty?: string }) {
@@ -17,7 +17,7 @@ export function TradeTape({ trades, showMarket = false, empty = "No trades yet."
             <p className="text-sub">
               <span className="font-medium">{t.agentName ?? shortAccount(t.traderAccount)}</span> {t.side === "BUY" ? "bought" : "sold"}{" "}
               <span className={`font-medium ${t.outcome === "YES" ? "text-yes" : "text-no"}`}>{t.outcome === "YES" ? "Yes" : "No"}</span>
-              <span className="tabular text-label-2"> for {qusd(t.collateral)} qUSD</span>
+              <span className="tabular text-label-2"> for {fmtNear(t.collateral)} NEAR</span>
             </p>
             {showMarket && t.slug && (
               <Link href={`/markets/${t.slug}`} className="mt-0.5 block truncate text-footnote text-label-2 hover:text-tint">

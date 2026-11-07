@@ -19,7 +19,7 @@ with sync_playwright() as p:
     pg.get_by_role("button", name="Sign in").click()
     pg.get_by_placeholder("ada").fill(handle)
     pg.get_by_role("button", name="Continue").click()
-    pg.get_by_role("button", name="Get 1,000 test qUSD").click()
+    pg.get_by_role("button", name="Get 1,000 test NEAR").click()
     pg.get_by_role("button", name="+50").click(); pg.get_by_role("button", name="+50").click()
     expect(pg.locator("#amt")).to_have_value("100")
     expect(pg.get_by_text("You receive").first).to_be_visible(timeout=5000)

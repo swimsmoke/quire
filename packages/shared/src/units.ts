@@ -1,13 +1,13 @@
 /**
  * Decimal <-> base-unit conversion without floating point.
- * qUSD (and outcome shares) use 6 decimals.
+ * NEAR (and outcome shares) use 6 decimals.
  */
-export const QUSD_DECIMALS = 6;
+export const UNIT_DECIMALS = 6;
 
 const DEC_RE = /^(\d+)(?:\.(\d+))?$/;
 
 /** "12.5" -> 12500000n (6 decimals). Rejects negatives, exponents, and excess precision. */
-export function parseUnits(value: string, decimals = QUSD_DECIMALS): bigint {
+export function parseUnits(value: string, decimals = UNIT_DECIMALS): bigint {
   const v = value.trim();
   const m = DEC_RE.exec(v);
   if (!m) throw new RangeError(`invalid decimal amount: ${value}`);
@@ -18,7 +18,7 @@ export function parseUnits(value: string, decimals = QUSD_DECIMALS): bigint {
 }
 
 /** 12500000n -> "12.5" */
-export function formatUnits(value: bigint, decimals = QUSD_DECIMALS, maxFrac = decimals): string {
+export function formatUnits(value: bigint, decimals = UNIT_DECIMALS, maxFrac = decimals): string {
   const neg = value < 0n;
   const abs = neg ? -value : value;
   const base = 10n ** BigInt(decimals);
@@ -37,7 +37,7 @@ export function formatPpmPercent(ppm: bigint, fractionDigits = 1): string {
   return fractionDigits > 0 ? `${whole}.${frac}%` : `${whole}%`;
 }
 
-/** ppm price -> "0.62" style per-share price in qUSD */
+/** ppm price -> "0.62" style per-share price in NEAR */
 export function formatPpmPrice(ppm: bigint, digits = 2): string {
   return formatUnits(ppm, 6, digits);
 }

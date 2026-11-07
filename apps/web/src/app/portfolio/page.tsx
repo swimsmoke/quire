@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { clientRequest } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { dateTime, pct, price, qusd } from "@/lib/format";
+import { dateTime, pct, price, fmtNear } from "@/lib/format";
 import { ModeTag } from "@/components/mode";
 import { PageTitle, SectionHeader } from "@/components/section";
 import { Segmented } from "@/components/ui";
@@ -29,7 +29,7 @@ interface Portfolio {
   funding: { id: string; originAsset: string; amountIn: string; status: string; createdAt: string }[];
 }
 
-const signed = (v: string) => `${BigInt(v) > 0n ? "+" : BigInt(v) < 0n ? "−" : ""}${qusd(BigInt(v) < 0n ? (-BigInt(v)).toString() : v)}`;
+const signed = (v: string) => `${BigInt(v) > 0n ? "+" : BigInt(v) < 0n ? "−" : ""}${fmtNear(BigInt(v) < 0n ? (-BigInt(v)).toString() : v)}`;
 const tone = (v: string) => (BigInt(v) > 0n ? "text-yes" : BigInt(v) < 0n ? "text-no" : "text-label-2");
 
 export default function PortfolioPage() {
@@ -56,19 +56,19 @@ export default function PortfolioPage() {
     <>
       <PageTitle title="Portfolio" subtitle={pf.accountId}>
         <p className="tabular mt-8 text-[3rem] leading-none font-semibold tracking-[-0.035em] md:text-[4rem]">
-          {qusd(total)} <span className="text-title2 font-medium text-label-2">qUSD</span>
+          {fmtNear(total)} <span className="text-title2 font-medium text-label-2">NEAR</span>
         </p>
         <p className="mt-2 text-sub text-label-2">
-          Total value at current prices. <span className={`tabular font-medium ${tone(pf.totals.unrealizedPnl)}`}>{signed(pf.totals.unrealizedPnl)} qUSD</span> unrealised.
+          Total value at current prices. <span className={`tabular font-medium ${tone(pf.totals.unrealizedPnl)}`}>{signed(pf.totals.unrealizedPnl)} NEAR</span> unrealised.
         </p>
       </PageTitle>
 
       <dl className="tabular grid grid-cols-2 gap-x-8 border-t hairline md:grid-cols-4">
         {[
-          ["Available", `${qusd(balance)} qUSD`],
-          ["Positions at current price", `${qusd(pf.totals.markValue)} qUSD`],
-          ["If everything were sold now", `${qusd(pf.totals.liquidationValue)} qUSD`],
-          ["Cost of positions", `${qusd(pf.totals.costBasis)} qUSD`],
+          ["Available", `${fmtNear(balance)} NEAR`],
+          ["Positions at current price", `${fmtNear(pf.totals.markValue)} NEAR`],
+          ["If everything were sold now", `${fmtNear(pf.totals.liquidationValue)} NEAR`],
+          ["Cost of positions", `${fmtNear(pf.totals.costBasis)} NEAR`],
         ].map(([k, v]) => (
           <div key={k} className="border-b hairline py-4">
             <dt className="text-footnote text-label-2">{k}</dt>
@@ -104,15 +104,15 @@ export default function PortfolioPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-body font-medium group-hover:text-tint">{p.market.question}</p>
                         <p className="tabular mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-footnote text-label-2">
-                          {BigInt(p.yesShares) > 0n && <span className="text-yes">{qusd(p.yesShares)} Yes</span>}
-                          {BigInt(p.noShares) > 0n && <span className="text-no">{qusd(p.noShares)} No</span>}
+                          {BigInt(p.yesShares) > 0n && <span className="text-yes">{fmtNear(p.yesShares)} Yes</span>}
+                          {BigInt(p.noShares) > 0n && <span className="text-no">{fmtNear(p.noShares)} No</span>}
                           <span>Yes now {pct(p.market.probabilityYesPpm)}</span>
-                          <span>cost {qusd(p.costBasis)}</span>
+                          <span>cost {fmtNear(p.costBasis)}</span>
                           <ModeTag mode={p.market.executionMode} />
                         </p>
                       </div>
                       <div className="tabular text-right">
-                        <p className="text-body font-semibold">{qusd(p.markValue)}</p>
+                        <p className="text-body font-semibold">{fmtNear(p.markValue)}</p>
                         <p className={`text-footnote font-medium ${tone(p.unrealizedPnl)}`}>{signed(p.unrealizedPnl)}</p>
                       </div>
                       <ChevronRight size={17} className="text-label-3" aria-hidden />
@@ -137,7 +137,7 @@ export default function PortfolioPage() {
                   <li key={t.id} className="flex gap-4 py-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sub">
-                        {t.side === "BUY" ? "Bought" : "Sold"} <span className="tabular">{qusd(t.shares)}</span>{" "}
+                        {t.side === "BUY" ? "Bought" : "Sold"} <span className="tabular">{fmtNear(t.shares)}</span>{" "}
                         <span className={`font-medium ${t.outcome === "YES" ? "text-yes" : "text-no"}`}>{t.outcome === "YES" ? "Yes" : "No"}</span> at{" "}
                         <span className="tabular">{price(t.avgPricePpm)}</span>
                       </p>
@@ -150,7 +150,7 @@ export default function PortfolioPage() {
                     </div>
                     <p className={`tabular text-body font-medium ${t.side === "BUY" ? "" : "text-yes"}`}>
                       {t.side === "BUY" ? "−" : "+"}
-                      {qusd(t.collateral)}
+                      {fmtNear(t.collateral)}
                     </p>
                   </li>
                 ))}

@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p res
-for c in quire-market qusd-token; do
+for c in quire-market; do
   (cd "$c" && cargo near build non-reproducible-wasm)
   cp "target/near/${c//-/_}/${c//-/_}.wasm" "res/${c}.wasm"
 done

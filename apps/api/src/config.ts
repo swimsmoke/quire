@@ -21,9 +21,8 @@ const Env = z.object({
 
   NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("mainnet"),
   NEAR_RPC_URL: z.string().url().default("https://rpc.mainnet.fastnear.com"),
-  /** Collateral token. Mainnet: Circle native USDC on NEAR. */
-  QUIRE_COLLATERAL_TOKEN: z.string().default("17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1"),
-  QUIRE_COLLATERAL_SYMBOL: z.string().default("USDC"),
+  /** Markets are denominated in native NEAR (1 unit = 1 micro-NEAR). */
+  QUIRE_COLLATERAL_SYMBOL: z.string().default("NEAR"),
   QUIRE_MARKET_CONTRACT: z.string().optional(),
 
   NEAR_AI_API_KEY: z.string().optional(),

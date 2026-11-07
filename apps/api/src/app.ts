@@ -73,7 +73,6 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean 
     network: cfg.NEAR_NETWORK,
     integrations: {
       marketContract: cfg.QUIRE_MARKET_CONTRACT ?? null,
-      collateralToken: cfg.QUIRE_COLLATERAL_TOKEN,
       collateralSymbol: cfg.QUIRE_COLLATERAL_SYMBOL,
       nearAiCloud: cfg.NEAR_AI_API_KEY ? "configured" : "missing NEAR_AI_API_KEY",
       nearIntents1Click: cfg.ONECLICK_JWT ? "configured (JWT)" : "unauthenticated (0.2% fee)",

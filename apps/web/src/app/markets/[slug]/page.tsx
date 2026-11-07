@@ -9,7 +9,7 @@ import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
 import { ChangePill } from "@/components/market-list";
 import { SectionHeader } from "@/components/section";
-import { ago, dateTime, pct, qusd } from "@/lib/format";
+import { ago, dateTime, pct, fmtNear } from "@/lib/format";
 import { category } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -57,9 +57,9 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           <dl className="tabular mt-8 grid grid-cols-2 gap-x-6 border-t hairline sm:grid-cols-3">
             <Stat k="No" v={pct(m.probabilityNoPpm)} />
             <Stat k="24h change" v={<ChangePill ppm={m.change24hPpm} />} />
-            <Stat k="24h volume" v={`${qusd(m.volume24h, 0)} qUSD`} />
-            <Stat k="Total volume" v={`${qusd(m.volume, 0)} qUSD`} />
-            <Stat k="Liquidity" v={`${qusd(m.liquidity, 0)} qUSD`} />
+            <Stat k="24h volume" v={`${fmtNear(m.volume24h, 0)} NEAR`} />
+            <Stat k="Total volume" v={`${fmtNear(m.volume, 0)} NEAR`} />
+            <Stat k="Liquidity" v={`${fmtNear(m.liquidity, 0)} NEAR`} />
             <Stat
               k="Traders"
               v={
@@ -98,7 +98,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
             <h3 className="mt-6 text-body font-semibold">How it could resolve</h3>
             <p className="mt-1 max-w-[64ch] text-body text-label-2">{claim.resolutionCriteria}</p>
             <p className="mt-4 max-w-[64ch] text-sub text-label-2">
-              Until then the market stays open. If the claim turns out to be ill-posed, it resolves invalid and every share redeems for 0.50 qUSD.
+              Until then the market stays open. If the claim turns out to be ill-posed, it resolves invalid and every share redeems for 0.50 NEAR.
             </p>
           </section>
 

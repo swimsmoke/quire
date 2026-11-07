@@ -22,8 +22,8 @@ export function SimulatedBadge() {
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Simulated mode">
         <div className="space-y-3 pb-2 text-sub text-label-2">
-          <p>Trades on this deployment settle on Quire&apos;s test ledger, not on NEAR. Balances are test qUSD with no value.</p>
-          <p>Every simulated record carries an orange Simulated label. When markets move on-chain, those records show NEAR testnet instead, with a link to the transaction.</p>
+          <p>Trades on this deployment settle on Quire&apos;s test ledger, not on NEAR. Balances are test NEAR with no value.</p>
+          <p>Every simulated record carries an orange Simulated label. When markets move on-chain, those records show NEAR mainnet instead, with a link to the transaction.</p>
         </div>
       </Sheet>
     </>

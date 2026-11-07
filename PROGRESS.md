@@ -8,9 +8,8 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 |---|---|
 | Monorepo (pnpm): `packages/shared`, `apps/api`, `contracts/` | `pnpm install` |
 | FPMM math (TS, bigint only) | 10 tests incl. 500 randomized solvency runs, 2,000 buy→sell round trips |
-| Market contract (Rust, near-sdk 5.30) | 25 unit tests: trading, slippage, duplicate orders, 1-yocto confirmation, storage, agents (limits/disable/no-withdraw/reclaim), resolution & redemption |
+| Market contract (Rust, near-sdk 5.30) | 30 unit tests: trading, slippage, duplicate orders, 1-yocto confirmation, storage, agents (limits/disable/no-withdraw/reclaim), resolution & redemption |
 | TS ⇄ Rust parity | 800 shared vectors, bit-exact |
-| qUSD testnet token (faucet + single-use bridge mint) | 4 unit tests |
 | Postgres schema (22 tables) + migration | applied to local Postgres 16 |
 | API: markets, quote, simulated trades, portfolio, faucet, dev auth | 10 integration tests on real Postgres incl. 40 concurrent trades and concurrent duplicate-order race |
 | Live smoke test | faucet → quote → trade → probability 50.0% → 52.4% over HTTP |
@@ -22,11 +21,12 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 - Cross-chain deposit panel states NEAR Intents is not connected; nothing can be started.
 - Encyclopedia, evidence and agent activity show empty states until steps 4-5 generate real data.
 
-## Network decision (7 Nov): mainnet, real USDC (option B)
-- Collateral: Circle native USDC on NEAR. qUSD remains only for local tests.
-- Contract safety caps added (per-account and total), deposits over cap refunded; 4 tests.
-- Manual GitHub Action `deploy-mainnet` (tests, build, deploy, init) using an environment secret.
-- Guide: docs/DEPLOY_MAINNET.md.
+## Network and collateral (7 Nov)
+- NEAR mainnet; markets priced and settled in **native NEAR** (no qUSD, no USDC).
+- `deposit()` auto-registers; storage drawn from balance; native-NEAR withdrawals with failure re-credit.
+- Safety caps (10 NEAR per account, 100 NEAR total by default), global pause, withdrawals always open.
+- Manual GitHub Action `deploy-mainnet`; guide in docs/DEPLOY_MAINNET.md. CI builds the wasm on every push.
+- Simulated mode (local dev and tests) labels its balances "test NEAR"; they have no value.
 
 ## ⚠️ Not yet verified in this workspace
 

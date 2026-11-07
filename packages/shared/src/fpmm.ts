@@ -9,7 +9,7 @@
  *
  * Model
  * -----
- * - Collateral (qUSD) and outcome shares share the same base unit (6 decimals).
+ * - Collateral (NEAR) and outcome shares share the same base unit (6 decimals).
  * - 1 YES share + 1 NO share ("a complete set") is always backed by exactly
  *   1 unit of collateral. Total YES supply == total NO supply == sets minted.
  * - The pool holds reserves (yes, no) and keeps yes * no non-decreasing.
@@ -26,8 +26,8 @@ export const BPS = 10_000n;
 export const MIN_PROB_PPM = 10_000n; // 1%
 export const MAX_PROB_PPM = 990_000n; // 99%
 /** Hard caps keep every intermediate product well inside u128 in the contract. */
-export const MAX_RESERVE = 10n ** 15n; // 1e9 qUSD
-export const MAX_TRADE = 10n ** 14n; // 1e8 qUSD
+export const MAX_RESERVE = 10n ** 15n; // 1e9 NEAR
+export const MAX_TRADE = 10n ** 14n; // 1e8 NEAR
 export const MAX_FEE_BPS = 500n; // 5%
 
 export type Outcome = "YES" | "NO";

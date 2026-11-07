@@ -102,7 +102,7 @@ export async function executeSimulatedTrade(db: DB, req: TradeRequest) {
 
       if ("sharesOut" in q) {
         if (q.sharesOut < req.minOut) throw new TradeError("SLIPPAGE", "price moved beyond your slippage tolerance");
-        if (bal!.available < req.amount) throw new TradeError("INSUFFICIENT_BALANCE", "insufficient qUSD balance");
+        if (bal!.available < req.amount) throw new TradeError("INSUFFICIENT_BALANCE", "insufficient NEAR balance");
       } else {
         if (q.collateralOut < req.minOut) throw new TradeError("SLIPPAGE", "price moved beyond your slippage tolerance");
       }

@@ -8,7 +8,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
   {
     h: "Claims are markets that never close",
     p: [
-      "Every claim on Quire, such as whether Bitcoin will trade above $150,000, is a market with two outcomes. A Yes share pays 1 qUSD if the claim is eventually resolved true; a No share pays 1 qUSD if it is resolved false.",
+      "Every claim on Quire, such as whether Bitcoin will trade above $150,000, is a market with two outcomes. A Yes share pays 1 NEAR if the claim is eventually resolved true; a No share pays 1 NEAR if it is resolved false.",
       "Markets have no end date. You can buy or sell at any time, so the price keeps reflecting what traders believe now. A claim is resolved only when it becomes definitively settled, after a proposal and a waiting period during which it can be challenged. If a claim proves ill-posed, it resolves invalid and every share redeems for 0.50.",
     ],
   },
@@ -17,7 +17,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     p: [
       "Each market holds a pool of Yes and No shares. The implied probability of Yes is the share of No in the pool. Buying Yes takes Yes shares out, which makes the next one more expensive.",
       "That gives three different numbers, and Quire always shows them separately: the probability (the price of the next small share), your execution price (the average you actually pay, including price impact and the 1% fee), and your position value (at the current probability, and what selling everything now would really pay).",
-      "Every Yes and No pair is backed by exactly 1 qUSD of collateral, so the market can always pay out.",
+      "Every Yes and No pair is backed by exactly 1 NEAR of collateral, so the market can always pay out.",
     ],
   },
   {
@@ -30,9 +30,8 @@ const SECTIONS: { h: string; p: string[] }[] = [
   {
     h: "Funding crosses chains with NEAR Intents and Chain Signatures",
     p: [
-      "NEAR Intents lets you deposit an asset from another chain: you get a quote and a one-time deposit address, and a network of solvers swaps the deposit into USDC. Quire follows the deposit until it completes, fails or is refunded, and credits your balance only after NEAR Intents reports success.",
+      "Quire runs on NEAR and every market is priced in NEAR, so the simplest way in is to deposit NEAR from your wallet. If your funds are on another chain, NEAR Intents gives you a quote and a one-time deposit address, and a network of solvers swaps the deposit into NEAR in your wallet. Quire follows each swap until it completes, fails or is refunded.",
       "Chain Signatures lets a NEAR account control an address on another chain. Quire uses it to send a deposit from a chain where you hold funds without leaving NEAR. The two do different jobs: Chain Signatures signs; NEAR Intents routes and settles.",
-      "NEAR Intents runs only on mainnet while Quire's markets run on NEAR testnet, so a verified mainnet deposit is credited as testnet qUSD by Quire's funding service. That service is a trusted component, and each deposit can be credited only once.",
     ],
   },
   {

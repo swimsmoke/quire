@@ -62,7 +62,7 @@ describe("quoteBuy", () => {
     expect(q.priceAfterPpm > q.priceBeforePpm).toBe(true);
     expect(priceYes(q.poolAfter) + priceNo(q.poolAfter)).toBe(PRICE_SCALE);
   });
-  it("known value: 100 qUSD into 1000/1000 with no fee", () => {
+  it("known value: 100 NEAR into 1000/1000 with no fee", () => {
     // newNo = 1100, newYes = ceil(1e6*1e6... ) -> shares = 1000 + 100 - 909.090910 = 190.909090
     const q = quoteBuy(pool, "YES", Q(100), 0n);
     expect(formatUnits(q.sharesOut)).toBe("190.90909");

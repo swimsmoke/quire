@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bot, ChevronRight, UserRound } from "lucide-react";
 import type { Market } from "@/lib/types";
-import { pct, qusdCompact } from "@/lib/format";
+import { pct, fmtNearCompact } from "@/lib/format";
 import { category } from "@/lib/format";
 import { ModeTag } from "./mode";
 
@@ -27,8 +27,8 @@ export function MarketList({ markets, compact = false }: { markets: Market[]; co
               <span className="block text-body leading-snug font-medium">{m.question}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-footnote text-label-2">
                 <span>{category(m.category)}</span>
-                <span className="tabular">{qusdCompact(m.volume24h)} 24h volume</span>
-                {!compact && <span className="tabular">{qusdCompact(m.liquidity)} liquidity</span>}
+                <span className="tabular">{fmtNearCompact(m.volume24h)} 24h volume</span>
+                {!compact && <span className="tabular">{fmtNearCompact(m.liquidity)} liquidity</span>}
                 {!compact && (
                   <span className="flex items-center gap-2">
                     <span className="flex items-center gap-0.5" title="Human traders">

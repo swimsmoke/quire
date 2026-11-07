@@ -18,7 +18,7 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 | Solo hackathon fit | ✗ wrong product | ✗ | possible | **best** |
 
 **Decision: FPMM** (fixed-product, complete-set minting — the design used by Gnosis/Omen).
-- Each YES+NO "complete set" is backed by exactly 1 qUSD, so the system is solvent by construction: total YES supply = total NO supply = collateral backing.
+- Each YES+NO "complete set" is backed by exactly 1 NEAR, so the system is solvent by construction: total YES supply = total NO supply = collateral backing.
 - `P(YES) = pool_no / (pool_yes + pool_no)`; buying mints sets and returns the bought side so `pool_yes · pool_no` never decreases.
 - Pure integer arithmetic (u128 / bigint). Every rounding direction favours the pool.
 - The TypeScript implementation (`packages/shared/src/fpmm.ts`) is the reference; the Rust contract (`contracts/quire-market/src/fpmm.rs`) is checked against 800 generated vectors for bit-exact agreement.
@@ -36,26 +36,24 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 
 | Component | What it is (verified) | Role in Quire |
 |---|---|---|
-| **Quire market contract** (`quire-market`) | Rust / near-sdk 5.30 | Source of truth for balances, positions, pools, agent limits. Emits NEP-297 `EVENT_JSON` logs. |
-| **qUSD** (`qusd-token`) | NEP-141, **testnet only, no value** | Collateral on testnet. Faucet (1,000/day) + minter-only `bridge_mint` with single-use `source_ref`. |
-| **NEAR Intents — 1Click API** | `https://1click.chaindefuser.com/v0/{tokens,quote,deposit/submit,status}`; statuses `PENDING_DEPOSIT, KNOWN_DEPOSIT_TX, PROCESSING, SUCCESS, INCOMPLETE_DEPOSIT, REFUNDED, FAILED`. **No testnet deployment exists.** JWT optional (else 0.2% fee). | Cross-chain funding: user deposits any supported asset on its origin chain → solvers swap → USDC lands in Quire's treasury on NEAR mainnet. |
+| **Quire market contract** (`quire-market`) | Rust / near-sdk 5.30, NEAR mainnet | Source of truth for balances (native NEAR, held as micro-NEAR units), positions, pools, agent limits. Emits NEP-297 `EVENT_JSON` logs. |
+| **NEAR Intents — 1Click API** | `https://1click.chaindefuser.com/v0/{tokens,quote,deposit/submit,status}`; statuses `PENDING_DEPOSIT, KNOWN_DEPOSIT_TX, PROCESSING, SUCCESS, INCOMPLETE_DEPOSIT, REFUNDED, FAILED`. **No testnet deployment exists.** JWT optional (else 0.2% fee). | Cross-chain funding: user deposits a supported asset on its origin chain, solvers swap it, and NEAR arrives in the user's own NEAR wallet, ready to deposit into Quire. |
 | **Chain Signatures** | MPC signer `v1.signer-prod.testnet` / `v1.signer`; derives foreign-chain addresses from `(NEAR account, path)` and signs payloads. | Lets a NEAR account control an address on another chain. Used to sign origin-chain deposit transactions (e.g. EVM USDC → the 1Click deposit address) from a NEAR-derived address. |
 | **NEAR AI Cloud** | OpenAI-compatible `https://cloud-api.near.ai/v1`, `sk-` API keys; TEE (Intel TDX + NVIDIA CC). `GET /v1/signature/{chat_id}` returns `{text, signature, signing_address, signing_algo}` where text = `model:sha256(req):sha256(resp)`; `GET /v1/attestation/report?model=…&nonce=…`. | Confidential generation of encyclopedia pages and agent analysis; Quire stores hashes, the signature, and verifies the recovered signer. |
 
 Intents ≠ Chain Signatures: Intents is a **solver/settlement network** (who executes the swap); Chain Signatures is a **key-management primitive** (who can sign on a foreign chain). Quire uses Chain Signatures to *originate* a deposit and Intents to *route* it.
 
-## 3. The testnet/mainnet seam (important)
+## 3. Collateral: native NEAR (decided 7 Nov 2026)
 
-Markets run on NEAR **testnet** (per hackathon guidance) but NEAR Intents is **mainnet-only**. The funding path therefore crosses networks:
+Everything runs on NEAR mainnet and markets are denominated in **native NEAR**: no custom token,
+no stablecoin, no bridge. A share pays 1 NEAR on resolution. Amounts are kept in micro-NEAR units
+inside the contract, so the integer FPMM math and its TypeScript/Rust parity tests are unchanged.
 
-```
-user asset (mainnet, any chain) ──1Click──▶ USDC in Quire treasury (NEAR mainnet)
-        │                                         │ backend polls /v0/status until SUCCESS
-        │                                         ▼
-        └── refunds on failure            qusd.bridge_mint(user, amount, ref = depositAddress)  (testnet)
-```
-
-This bridge is a **centralised, trusted component** (the funding service holds the qUSD minter key). It is idempotent (one mint per deposit address, enforced on-chain) and every credit links to the 1Click status record. Documented as a trust assumption; see `docs/SECURITY.md`.
+- Deposit: payable `deposit()`; the first deposit registers the account and pays its storage.
+- Storage for new records is drawn from the account's own balance, so trades never fail for a missing storage deposit.
+- Withdraw: native transfer with a callback that re-credits the balance if the transfer fails.
+- Safety: per-account and total caps, global pause (withdrawals still work), no owner access to user balances.
+- Prices are in NEAR, so a probability of 0.62 means a Yes share costs 0.62 NEAR. NEAR's dollar price does not affect the probability.
 
 ## 4. Data & indexing
 

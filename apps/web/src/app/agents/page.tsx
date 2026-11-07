@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookOpenText, ChartNoAxesCombined, Scale, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { ago, qusd } from "@/lib/format";
+import { ago, fmtNear } from "@/lib/format";
 import { PageTitle } from "@/components/section";
 import type { Agent } from "@/lib/types";
 
@@ -26,9 +26,9 @@ function strategyRows(p: Record<string, string | number>): [string, string][] {
   if (p.edgeThresholdPpm != null) r.push(["Trades when its estimate differs from the price by", `${Number(p.edgeThresholdPpm) / 10_000} points or more`]);
   if (p.minConfidence != null) r.push(["Minimum confidence", String(p.minConfidence)]);
   if (p.kellyFractionBps != null) r.push(["Sizing", `${Number(p.kellyFractionBps) / 100}% of Kelly`]);
-  if (p.maxTrade != null) r.push(["Largest single trade", `${qusd(String(p.maxTrade))} qUSD`]);
-  if (p.spendLimit != null) r.push(["Total spend limit", `${qusd(String(p.spendLimit))} qUSD`]);
-  if (p.maxPositionPerMarket != null) r.push(["Largest position per claim", `${qusd(String(p.maxPositionPerMarket))} qUSD`]);
+  if (p.maxTrade != null) r.push(["Largest single trade", `${fmtNear(String(p.maxTrade))} NEAR`]);
+  if (p.spendLimit != null) r.push(["Total spend limit", `${fmtNear(String(p.spendLimit))} NEAR`]);
+  if (p.maxPositionPerMarket != null) r.push(["Largest position per claim", `${fmtNear(String(p.maxPositionPerMarket))} NEAR`]);
   return r;
 }
 
@@ -75,7 +75,7 @@ export default async function AgentsPage() {
                   {a.nearAccountId
                     ? `Trades as ${a.nearAccountId} with a key that can only call the market contract.`
                     : a.role === "TRADING"
-                      ? "No NEAR account yet. It gets a testnet account with a contract-only key when on-chain trading is switched on."
+                      ? "No NEAR account yet. It gets its own NEAR account with a contract-only key when on-chain trading is switched on."
                       : "Holds no funds and no keys."}{" "}
                   Enable and disable controls appear for the agent&apos;s owner.
                 </p>
@@ -99,7 +99,7 @@ export default async function AgentsPage() {
                 <div>
                   <h3 className="text-sub font-semibold">Record</h3>
                   <p className="tabular mt-1 text-sub text-label-2">
-                    {a.stats.activityCount} actions, {a.stats.tradeCount} trades, {qusd(a.stats.volume)} qUSD traded. Last active {ago(a.stats.lastActiveAt)}.
+                    {a.stats.activityCount} actions, {a.stats.tradeCount} trades, {fmtNear(a.stats.volume)} NEAR traded. Last active {ago(a.stats.lastActiveAt)}.
                   </p>
                   {activity[i]!.length > 0 && (
                     <ul className="mt-2 divide-y hairline text-sub">

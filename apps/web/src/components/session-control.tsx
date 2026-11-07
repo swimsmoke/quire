@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "@/lib/session";
-import { qusd } from "@/lib/format";
+import { fmtNear } from "@/lib/format";
 import { buttonPrimary, Sheet } from "./ui";
 
 export function SessionControl() {
@@ -19,7 +19,7 @@ export function SessionControl() {
     return (
       <>
         <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-full pr-1 pl-3 text-sub transition-colors hover:bg-fill">
-          <span className="tabular hidden text-label-2 sm:inline">{qusd(balance)} qUSD</span>
+          <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
           <span className="grid size-7 place-items-center rounded-full bg-tint text-footnote font-semibold text-white" aria-hidden>
             {me.session.accountId.slice(0, 1).toUpperCase()}
           </span>
@@ -33,7 +33,7 @@ export function SessionControl() {
             </div>
             <div className="flex justify-between py-3">
               <dt className="text-label-2">Available</dt>
-              <dd className="tabular">{qusd(balance)} qUSD</dd>
+              <dd className="tabular">{fmtNear(balance)} NEAR</dd>
             </div>
             <div className="flex justify-between py-3">
               <dt className="text-label-2">Sign-in method</dt>

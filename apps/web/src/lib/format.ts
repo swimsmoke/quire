@@ -15,8 +15,8 @@ export const price = (ppm: string | number | bigint) => {
   return `${w}.${f.padEnd(2, "0")}`;
 };
 
-/** qUSD with thousands grouping and up to `frac` decimals. */
-export function qusd(v: string | number | bigint, frac = 2) {
+/** NEAR with thousands grouping and up to `frac` decimals. */
+export function fmtNear(v: string | number | bigint, frac = 2) {
   const s = formatUnits(big(v), 6, frac);
   const neg = s.startsWith("-");
   const [w, f] = (neg ? s.slice(1) : s).split(".");
@@ -24,12 +24,12 @@ export function qusd(v: string | number | bigint, frac = 2) {
   return `${neg ? "-" : ""}${grouped}${f ? "." + f : ""}`;
 }
 
-/** compact qUSD: 12_345_000_000 -> "12.3k" */
-export function qusdCompact(v: string | bigint) {
-  const n = big(v) / 1_000_000n; // whole qUSD
+/** compact NEAR: 12_345_000_000 -> "12.3k" */
+export function fmtNearCompact(v: string | bigint) {
+  const n = big(v) / 1_000_000n; // whole NEAR
   if (n >= 1_000_000n) return `${formatUnits(n, 6, 1)}M`;
   if (n >= 1_000n) return `${formatUnits(n, 3, 1)}k`;
-  return qusd(v, 0);
+  return fmtNear(v, 0);
 }
 
 export function ago(iso: string | null | undefined) {

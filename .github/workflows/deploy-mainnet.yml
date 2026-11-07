@@ -16,12 +16,12 @@ on:
         description: "First deploy? Runs new(...) once. Leave false for upgrades."
         type: boolean
         default: true
-      account_cap_usdc:
-        description: "Max USDC per account (safety cap)"
-        default: "25"
-      tvl_cap_usdc:
-        description: "Max USDC held by the contract in total (safety cap)"
-        default: "200"
+      account_cap_near:
+        description: "Max NEAR per account (safety cap)"
+        default: "10"
+      tvl_cap_near:
+        description: "Max NEAR held for trading in total (safety cap)"
+        default: "100"
       challenge_period_hours:
         description: "Resolution challenge window"
         default: "24"
@@ -33,7 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: mainnet
     env:
-      USDC: "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1"
       NEAR_CLI_VERSION: "0.31.1"
     steps:
       - uses: actions/checkout@v4
@@ -71,19 +70,20 @@ jobs:
           CONTRACT: ${{ inputs.contract_account_id }}
           OWNER: ${{ inputs.owner_account_id }}
           INIT: ${{ inputs.initialize }}
-          ACCOUNT_CAP: ${{ inputs.account_cap_usdc }}
-          TVL_CAP: ${{ inputs.tvl_cap_usdc }}
+          ACCOUNT_CAP: ${{ inputs.account_cap_near }}
+          TVL_CAP: ${{ inputs.tvl_cap_near }}
           HOURS: ${{ inputs.challenge_period_hours }}
           KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           [[ -n "$KEY" ]] || { echo "secret QUIRE_CONTRACT_PRIVATE_KEY missing"; exit 1; }
+          # contract units are micro-NEAR (10^-6 NEAR)
           to_units() { python3 -c "from decimal import Decimal as D; import sys; v=D(sys.argv[1]); assert v>0; print(int(v*10**6))" "$1"; }
           WASM=contracts/res/quire-market.wasm
           ls -la "$WASM"
           if [[ "$INIT" == "true" ]]; then
-            ARGS=$(python3 -c "import json,sys; print(json.dumps({'owner_id':sys.argv[1],'resolver_id':sys.argv[1],'collateral_token':sys.argv[2],'challenge_period_ns':str(int(sys.argv[3])*3600*10**9),'account_cap':sys.argv[4],'tvl_cap':sys.argv[5]}))" \
-              "$OWNER" "$USDC" "$HOURS" "$(to_units "$ACCOUNT_CAP")" "$(to_units "$TVL_CAP")")
+            ARGS=$(python3 -c "import json,sys; print(json.dumps({'owner_id':sys.argv[1],'resolver_id':sys.argv[1],'challenge_period_ns':str(int(sys.argv[2])*3600*10**9),'account_cap':sys.argv[3],'tvl_cap':sys.argv[4]}))" \
+              "$OWNER" "$HOURS" "$(to_units "$ACCOUNT_CAP")" "$(to_units "$TVL_CAP")")
             echo "init args: $ARGS"
             near contract deploy "$CONTRACT" use-file "$WASM" with-init-call new json-args "$ARGS" \
               prepaid-gas '100 Tgas' attached-deposit '0 NEAR' \

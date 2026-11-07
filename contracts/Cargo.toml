@@ -1,10 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["quire-market", "qusd-token"]
+members = ["quire-market"]
 
 [workspace.dependencies]
 near-sdk = "5.30"
-near-contract-standards = "5.30"
 
 [profile.release]
 codegen-units = 1

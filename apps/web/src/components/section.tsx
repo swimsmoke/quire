@@ -27,7 +27,7 @@ export function PageTitle({ title, subtitle, children }: { title: string; subtit
 }
 
 const STEPS = [
-  { t: "Fund", d: "Deposit from another chain through NEAR Intents, or claim test qUSD on testnet." },
+  { t: "Fund", d: "Deposit NEAR from your wallet, or swap in an asset from another chain with NEAR Intents." },
   { t: "Trade", d: "Buy Yes or No. Every trade reprices the pool, so the price is the market's current belief." },
   { t: "Research", d: "Scout gathers sources, and Quire fetches each one to confirm the quoted excerpt is there." },
   { t: "Analyse and act", d: "Assessor weighs the evidence against the price. Arbiter trades only inside its on-chain limits." },

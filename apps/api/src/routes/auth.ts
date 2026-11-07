@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { accountBalances, transactions, users } from "../db/schema.js";
 
-const FAUCET_AMOUNT = 1_000_000_000n; // 1,000 qUSD
+const FAUCET_AMOUNT = 1_000_000_000n; // 1,000 *simulated* NEAR (no value; SIMULATED mode only)
 
 export async function authRoutes(app: FastifyInstance) {
   /**
@@ -27,11 +27,11 @@ export async function authRoutes(app: FastifyInstance) {
     return { user: u, session: { accountId: s.accountId, method: s.method }, balances };
   });
 
-  /** SIMULATED-mode faucet: 1,000 qUSD per account per UTC day, recorded as a sim transaction. */
+  /** SIMULATED-mode faucet: 1,000 test NEAR (no value) per account per UTC day, recorded as a sim transaction. */
   app.post("/faucet", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (req, reply) => {
     const s = await app.requireSession(req, reply);
     if (app.cfg.QUIRE_EXECUTION_MODE !== "SIMULATED") {
-      return reply.code(409).send({ error: "USE_ONCHAIN_FAUCET", message: "call faucet() on the qUSD testnet contract from your wallet" });
+      return reply.code(409).send({ error: "ONCHAIN_MODE", message: "On-chain markets: deposit NEAR from your wallet instead" });
     }
     const day = new Date().toISOString().slice(0, 10);
     const ref = `faucet:${s.accountId}:${day}`;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatUnits, parseUnits } from "@quire/shared";
 import { ApiError, clientRequest, humanError } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { pct, price, qusd } from "@/lib/format";
+import { pct, price, fmtNear } from "@/lib/format";
 import type { Market, Quote } from "@/lib/types";
 import { buttonPrimary, buttonSecondary, Segmented, Sheet } from "./ui";
 
@@ -163,12 +163,12 @@ export function TradeTicket({ market }: { market: Market }) {
       <div className="mt-4 space-y-4">
         <Segmented label="Buy or sell" value={side} onChange={setSide} options={[{ value: "BUY", label: "Buy" }, { value: "SELL", label: "Sell" }]} />
         <div className="flex gap-2">{(["YES", "NO"] as const).map(outcomeButton)}</div>
-        <p className="text-footnote text-label-2">Price per share in qUSD. A share pays 1 qUSD if the claim resolves its way.</p>
+        <p className="text-footnote text-label-2">Price per share in NEAR. A share pays 1 NEAR if the claim resolves its way.</p>
 
         <div>
           <label htmlFor="amt" className="flex justify-between text-footnote text-label-2">
             <span>{side === "BUY" ? "Amount" : "Shares"}</span>
-            {me && <span className="tabular">{side === "BUY" ? `${qusd(balance)} qUSD available` : `${qusd(held)} held`}</span>}
+            {me && <span className="tabular">{side === "BUY" ? `${fmtNear(balance)} NEAR available` : `${fmtNear(held)} held`}</span>}
           </label>
           <div className="mt-1.5 flex items-baseline border-b hairline pb-2 transition-colors focus-within:border-tint">
             <input
@@ -180,7 +180,7 @@ export function TradeTicket({ market }: { market: Market }) {
               className="tabular w-full bg-transparent text-[2rem] leading-tight font-semibold tracking-[-0.02em] outline-none placeholder:text-label-3"
               placeholder="0"
             />
-            <span className="text-sub text-label-2">{side === "BUY" ? "qUSD" : "shares"}</span>
+            <span className="text-sub text-label-2">{side === "BUY" ? "NEAR" : "shares"}</span>
           </div>
           <div className="mt-3 flex gap-2">
             {(side === "BUY" ? ["10", "50", "100"] : []).map((d) => (
@@ -221,9 +221,9 @@ export function TradeTicket({ market }: { market: Market }) {
           <dl className="tabular overflow-hidden text-sub">
             {quote && (
               <div className="divide-y hairline border-y hairline">
-                <Row k="You receive" v={side === "BUY" ? `${qusd(quote.amountOut)} ${outcomeLabel} shares` : `${qusd(quote.amountOut)} qUSD`} strong />
+                <Row k="You receive" v={side === "BUY" ? `${fmtNear(quote.amountOut)} ${outcomeLabel} shares` : `${fmtNear(quote.amountOut)} NEAR`} strong />
                 <Row k="Average price" v={price(quote.avgPricePpm)} />
-                <Row k="Fee" v={`${qusd(quote.fee)} qUSD`} />
+                <Row k="Fee" v={`${fmtNear(quote.fee)} NEAR`} />
                 <Row k={`${outcomeLabel} probability`} v={`${pct(quote.priceBeforePpm)} to ${pct(quote.priceAfterPpm)}`} />
               </div>
             )}
@@ -252,11 +252,11 @@ export function TradeTicket({ market }: { market: Market }) {
           <h3 className="text-sub font-semibold">Your position</h3>
           {holding && (BigInt(holding.yesShares) > 0n || BigInt(holding.noShares) > 0n) ? (
             <dl className="tabular mt-2 divide-y hairline text-sub">
-              <Row k="Yes shares" v={qusd(holding.yesShares)} />
-              <Row k="No shares" v={qusd(holding.noShares)} />
-              <Row k="Cost" v={`${qusd(holding.costBasis)} qUSD`} />
-              <Row k="Value at current price" v={`${qusd(holding.markValue)} qUSD`} />
-              <Row k="If sold now" v={`${qusd(holding.liquidationValue)} qUSD`} />
+              <Row k="Yes shares" v={fmtNear(holding.yesShares)} />
+              <Row k="No shares" v={fmtNear(holding.noShares)} />
+              <Row k="Cost" v={`${fmtNear(holding.costBasis)} NEAR`} />
+              <Row k="Value at current price" v={`${fmtNear(holding.markValue)} NEAR`} />
+              <Row k="If sold now" v={`${fmtNear(holding.liquidationValue)} NEAR`} />
             </dl>
           ) : (
             <p className="mt-1 text-sub text-label-2">You don&apos;t hold this claim yet.</p>
@@ -264,7 +264,7 @@ export function TradeTicket({ market }: { market: Market }) {
 
           <h3 className="mt-8 text-sub font-semibold">Funds</h3>
           <p className="tabular mt-1 text-sub">
-            {qusd(balance)} qUSD available{simulated && <span className="text-label-2"> (test funds)</span>}
+            {fmtNear(balance)} NEAR available{simulated && <span className="text-label-2"> (test funds)</span>}
           </p>
           {simulated && (
             <button
@@ -272,18 +272,18 @@ export function TradeTicket({ market }: { market: Market }) {
               onClick={async () => {
                 setFundMsg(null);
                 try {
-                  setFundMsg(`Added ${qusd(await claimTestFunds())} test qUSD.`);
+                  setFundMsg(`Added ${fmtNear(await claimTestFunds())} test NEAR.`);
                 } catch (e) {
                   setFundMsg(e instanceof ApiError && e.code === "FAUCET_COOLDOWN" ? "Test funds already claimed today. Try again after midnight UTC." : (e as Error).message);
                 }
               }}
             >
-              Get 1,000 test qUSD
+              Get 1,000 test NEAR
             </button>
           )}
           {fundMsg && <p className="mt-2 text-footnote text-label-2">{fundMsg}</p>}
           <p className="mt-5 text-footnote text-label-2">
-            <span className="font-medium text-label">Deposit from another chain.</span> Cross-chain deposits route through NEAR Intents and settle as USDC. Not connected in this build, so no deposit can be started yet.
+            <span className="font-medium text-label">Deposit from another chain.</span> NEAR Intents can swap an asset from another chain into NEAR in your wallet, ready to deposit. Not connected in this build, so no swap can be started yet.
           </p>
         </div>
       )}
@@ -298,7 +298,7 @@ export function TradeTicket({ market }: { market: Market }) {
             <p className="mt-3 text-sub" role="status">
               {done.duplicate
                 ? "This order had already executed. Your position and history show it."
-                : `${done.side === "BUY" ? "Bought" : "Sold"} ${qusd(done.shares)} ${done.outcome === "YES" ? "Yes" : "No"} shares for ${qusd(done.collateral)} qUSD at ${price(done.avg)} average. Yes is now ${pct(done.prob)}.`}
+                : `${done.side === "BUY" ? "Bought" : "Sold"} ${fmtNear(done.shares)} ${done.outcome === "YES" ? "Yes" : "No"} shares for ${fmtNear(done.collateral)} NEAR at ${price(done.avg)} average. Yes is now ${pct(done.prob)}.`}
             </p>
             <button data-autofocus onClick={() => setReviewing(false)} className={`${buttonPrimary} mt-5 w-full`}>
               Done
@@ -310,12 +310,12 @@ export function TradeTicket({ market }: { market: Market }) {
               <p className="text-sub text-label-2">{market.question}</p>
               <dl className="tabular mt-4 divide-y hairline border-y hairline text-sub">
                 <Row k="Order" v={`${side === "BUY" ? "Buy" : "Sell"} ${outcomeLabel}`} strong />
-                <Row k={side === "BUY" ? "You pay" : "You sell"} v={side === "BUY" ? `${qusd(quote.amountIn)} qUSD` : `${qusd(quote.amountIn)} shares`} />
-                <Row k="You receive" v={side === "BUY" ? `${qusd(quote.amountOut)} shares` : `${qusd(quote.amountOut)} qUSD`} />
+                <Row k={side === "BUY" ? "You pay" : "You sell"} v={side === "BUY" ? `${fmtNear(quote.amountIn)} NEAR` : `${fmtNear(quote.amountIn)} shares`} />
+                <Row k="You receive" v={side === "BUY" ? `${fmtNear(quote.amountOut)} shares` : `${fmtNear(quote.amountOut)} NEAR`} />
                 <Row k="Average price" v={price(quote.avgPricePpm)} />
-                <Row k="Fee" v={`${qusd(quote.fee)} qUSD`} />
+                <Row k="Fee" v={`${fmtNear(quote.fee)} NEAR`} />
                 <Row k="Price impact" v={pct(quote.priceImpactPpm, 2)} />
-                <Row k="Fills only if you get at least" v={side === "BUY" ? `${qusd(quote.minAmountOut)} shares` : `${qusd(quote.minAmountOut)} qUSD`} />
+                <Row k="Fills only if you get at least" v={side === "BUY" ? `${fmtNear(quote.minAmountOut)} shares` : `${fmtNear(quote.minAmountOut)} NEAR`} />
               </dl>
               {error && (
                 <p role="alert" className="mt-3 text-footnote text-no">
