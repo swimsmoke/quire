@@ -331,7 +331,7 @@ export function TradeTicket({ market }: { market: Market }) {
           )}
           {fundMsg && <p className="mt-2 text-footnote text-label-2">{fundMsg}</p>}
           <p className="mt-5 text-footnote text-label-2">
-            <span className="font-medium text-label">From another chain.</span> NEAR Intents can swap an asset from another chain into NEAR in your wallet, ready to deposit. Not connected in this build, so no swap can be started yet.
+            <span className="font-medium text-label">From another chain.</span> Planned: NEAR Intents will swap an asset from another chain into NEAR in your wallet. Not connected in this build.
           </p>
         </div>
       )}

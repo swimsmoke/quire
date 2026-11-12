@@ -36,6 +36,23 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 - No sign-in needed on-chain: positions and trades are public chain data, read by account id.
 - NOT yet run against the live network from this workspace (no network route to NEAR): first real run is the deployed site.
 
+## Live on NEAR testnet (12 Nov)
+- Contract `hardsealowner.testnet`, owner `hardseal5642.testnet`; site https://quire-gamma.vercel.app; API on Render; database on Neon.
+- Verified live by the owner: wallet connect (Meteor), deposit, three markets created, two-wallet trades.
+
+## Encyclopedia and evidence (12 Nov)
+- Scout: `POST /markets/:slug/evidence` fetches the page and checks the quote appears word for word (https only, public hosts only).
+- Scribe: `POST /markets/:slug/encyclopedia/generate` builds structured input from live market state + verified evidence, calls NEAR AI Cloud,
+  validates the JSON structure (one retry), drops citations that are not provided evidence, stores the revision and keeps old ones.
+- Verification recorded per revision: sha256 of exact request and response bytes, enclave signature checked (hashes present + signer recovered),
+  signing address looked up in the attestation report. The hardware quote itself is NOT verified by Quire.
+- Update policy: first revision, new verified evidence, or a Yes move of 3+ points; minimum 2 minutes between revisions.
+- 9 tests with fake NEAR AI and fake web fetch (28 API tests total). NOT yet run against the real NEAR AI Cloud from this workspace.
+- Agents page: Scout and Scribe active with real activity logs; Assessor and Arbiter marked "not active in this build".
+
+## Not built (roadmap, stated in the app)
+- Analysis and trading agents running live; NEAR Intents funding; Chain Signatures; automatic source discovery.
+
 ## ⚠️ Not yet verified in this workspace
 
 - **Contract wasm build + testnet deploy**: this workspace cannot download the wasm Rust target. CI workflow (`.github/workflows/ci.yml`) builds it on GitHub, or run `contracts/build.sh` locally.

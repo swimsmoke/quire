@@ -29,6 +29,10 @@ const Env = z.object({
   NEAR_AI_BASE_URL: z.string().url().default("https://cloud-api.near.ai/v1"),
   NEAR_AI_MODEL: z.string().default("deepseek-ai/DeepSeek-V3.1"),
 
+  /** Encyclopedia update policy: minimum Yes move (ppm) and minimum seconds between revisions. */
+  ARTICLE_MIN_MOVE_PPM: z.coerce.number().int().min(0).default(30_000),
+  ARTICLE_MIN_INTERVAL_S: z.coerce.number().int().min(0).default(120),
+
   ONECLICK_BASE_URL: z.string().url().default("https://1click.chaindefuser.com"),
   ONECLICK_JWT: z.string().optional(),
 });

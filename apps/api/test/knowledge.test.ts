@@ -11,7 +11,8 @@ describe("read APIs", () => {
     expect(r.agents.map((a: { role: string }) => a.role).sort()).toEqual(["ANALYSIS", "KNOWLEDGE", "RESEARCH", "TRADING"]);
     const arbiter = r.agents.find((a: { slug: string }) => a.slug === "arbiter");
     expect(arbiter.permissions).toEqual(["TRADE"]);
-    expect(arbiter.strategy.params.maxTrade).toBe("25000000");
+    expect(arbiter.strategy.params.maxTrade).toBe("250000");
+    expect(arbiter.enabled).toBe(false);
   });
   it("encyclopedia is honestly empty before any generation", async () => {
     const r = (await ctx.app.inject({ method: "GET", url: "/markets/btc-above-150k/encyclopedia" })).json();

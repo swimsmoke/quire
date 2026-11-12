@@ -7,6 +7,7 @@ import { TradeTicket } from "@/components/trade-ticket";
 import { TradeTape } from "@/components/trade-tape";
 import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
+import { AddEvidence, GenerateArticle } from "@/components/knowledge-actions";
 import { ChangePill } from "@/components/market-list";
 import { SectionHeader } from "@/components/section";
 import { ago, dateTime, pct, fmtNear } from "@/lib/format";
@@ -90,6 +91,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
               </span>
             </div>
             <EncyclopediaArticle data={ency} evidence={ev.evidence} currentPpm={m.probabilityYesPpm} />
+            <GenerateArticle slug={m.slug} hasArticle={!!ency.current} />
           </section>
 
           <section aria-labelledby="claim-h" className="border-t hairline pt-8">
@@ -105,6 +107,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           <section aria-labelledby="ev-h" className="border-t hairline pt-8">
             <SectionHeader id="ev-h" title="Evidence" />
             <EvidenceList evidence={ev.evidence} />
+            <AddEvidence slug={m.slug} />
           </section>
 
           <section aria-labelledby="ag-h" className="border-t hairline pt-8">

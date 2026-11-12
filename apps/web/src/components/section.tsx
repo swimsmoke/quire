@@ -27,11 +27,11 @@ export function PageTitle({ title, subtitle, children }: { title: string; subtit
 }
 
 const STEPS = [
-  { t: "Fund", d: "Deposit NEAR from your wallet, or swap in an asset from another chain with NEAR Intents." },
+  { t: "Fund", d: "Connect a NEAR wallet and deposit NEAR into the Quire contract. You can withdraw at any time." },
   { t: "Trade", d: "Buy Yes or No. Every trade reprices the pool, so the price is the market's current belief." },
-  { t: "Research", d: "Scout gathers sources, and Quire fetches each one to confirm the quoted excerpt is there." },
-  { t: "Analyse and act", d: "Assessor weighs the evidence against the price. Arbiter trades only inside its on-chain limits." },
-  { t: "Write", d: "Scribe revises the claim's page on NEAR AI Cloud when the price or evidence changes materially." },
+  { t: "Add evidence", d: "Submit a source with a quote. Scout fetches the page and confirms the quote is really there." },
+  { t: "Write", d: "Scribe writes the claim's encyclopedia page on NEAR AI Cloud from the live price and verified evidence." },
+  { t: "Revise", d: "When the price moves materially or new evidence is verified, Scribe writes a new revision. Old ones are kept." },
 ];
 
 export function Steps() {

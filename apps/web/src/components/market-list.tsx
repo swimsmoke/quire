@@ -17,7 +17,7 @@ export function ChangePill({ ppm }: { ppm: number }) {
 
 /** Plain list rows separated by hairlines; no cards. */
 export function MarketList({ markets, compact = false }: { markets: Market[]; compact?: boolean }) {
-  if (!markets.length) return <p className="py-10 text-sub text-label-2">No claims match. Clear the search or choose another category.</p>;
+  if (!markets.length) return <p className="py-10 text-sub text-label-2">No claims here yet.</p>;
   return (
     <ul className="divide-y hairline border-y hairline">
       {markets.map((m) => (

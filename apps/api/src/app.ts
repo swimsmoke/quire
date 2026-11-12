@@ -11,6 +11,7 @@ import { authRoutes } from "./routes/auth.js";
 import { portfolioRoutes } from "./routes/portfolio.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
 import { onchainRoutes } from "./routes/onchain.js";
+import { scribeRoutes } from "./routes/scribe.js";
 import type { config as Config } from "./config.js";
 
 export type AppConfig = typeof Config;
@@ -21,6 +22,8 @@ declare module "fastify" {
     cfg: AppConfig;
     sessions: ReturnType<typeof sessionCodec>;
     chainFetch?: typeof fetch;
+    aiFetch?: typeof fetch;
+    webFetch?: typeof fetch;
     requireSession: (req: FastifyRequest, reply: FastifyReply) => Promise<Session>;
   }
 }
@@ -35,11 +38,13 @@ const TRADE_ERROR_STATUS: Record<string, number> = {
   INSUFFICIENT_SHARES: 422,
 };
 
-export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean; chainFetch?: typeof fetch } = {}) {
+export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean; chainFetch?: typeof fetch; aiFetch?: typeof fetch; webFetch?: typeof fetch } = {}) {
   const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 64 * 1024 });
   app.decorate("db", db);
   app.decorate("cfg", cfg);
   app.decorate("chainFetch", opts.chainFetch);
+  app.decorate("aiFetch", opts.aiFetch);
+  app.decorate("webFetch", opts.webFetch);
   app.decorate("sessions", sessionCodec(cfg.SESSION_SECRET));
   app.decorate("requireSession", async (req: FastifyRequest, reply: FastifyReply) => {
     const token = bearer(req);
@@ -88,5 +93,6 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean;
   await app.register(portfolioRoutes);
   await app.register(knowledgeRoutes);
   await app.register(onchainRoutes);
+  await app.register(scribeRoutes);
   return app;
 }

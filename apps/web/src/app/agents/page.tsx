@@ -40,7 +40,7 @@ export default async function AgentsPage() {
     <>
       <PageTitle
         title="Agents"
-        subtitle="Four agents work on every claim, each with one job and only the permissions it needs. An agent that recommends a trade cannot place it, and the trading agent can only spend what its owner funded, inside limits the contract enforces."
+        subtitle="Quire is designed around four agents, each with one job and only the permissions it needs. Two run today: Scout checks evidence and Scribe writes the encyclopedia. The analysis and trading agents are planned, and the contract already enforces the trading limits they will work under."
       />
       <div className="space-y-14">
         {agents.map((a, i) => {
@@ -59,7 +59,7 @@ export default async function AgentsPage() {
                     </h2>
                     <p className="text-footnote text-label-2">
                       {role.label} agent,{" "}
-                      <span className={a.enabled ? "text-yes" : "text-no"}>{a.enabled ? "enabled" : "disabled"}</span>
+                      <span className={a.enabled ? "text-yes" : "text-label-2"}>{a.enabled ? "active" : "not active in this build"}</span>
                     </p>
                   </div>
                 </div>
@@ -75,9 +75,8 @@ export default async function AgentsPage() {
                   {a.nearAccountId
                     ? `Trades as ${a.nearAccountId} with a key that can only call the market contract.`
                     : a.role === "TRADING"
-                      ? "No NEAR account yet. It gets its own NEAR account with a contract-only key when on-chain trading is switched on."
-                      : "Holds no funds and no keys."}{" "}
-                  Enable and disable controls appear for the agent&apos;s owner.
+                      ? "No NEAR account yet. When it is switched on it trades from its own account with a contract-only key."
+                      : "Holds no funds and no keys."}
                 </p>
               </div>
 

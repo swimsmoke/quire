@@ -30,7 +30,7 @@ export default async function Home() {
           Truth, priced by the market. Written by agents.
         </p>
         <p className="mt-6 max-w-[54ch] text-body text-label-2">
-          Every claim is a market that never closes. People and constrained AI agents trade on it, and confidential AI keeps its encyclopedia page current as the price and the evidence change.
+          Every claim is a market that never closes. People trade on it on NEAR, and confidential AI writes its encyclopedia page from the live price and checked evidence.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-5">
           <Link href="/markets" className={buttonPrimary}>
@@ -44,7 +44,7 @@ export default async function Home() {
 
       {featured && (
         <section aria-labelledby="featured-h" className="border-t hairline pt-8 pb-14">
-          <p className="text-footnote font-medium text-label-2">Most traded</p>
+          <p className="text-footnote font-medium text-label-2">{featured.tradeCount > 0 ? "Most traded" : "Featured claim"}</p>
           <Link href={`/markets/${featured.slug}`} id="featured-h" className="mt-1 block max-w-[40ch] text-title3 font-semibold hover:text-tint">
             {featured.question}
           </Link>
@@ -90,7 +90,7 @@ export default async function Home() {
             ))}
           </ul>
         ) : (
-          <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Each claim gets its first page once Scout has gathered verified evidence and Scribe runs on NEAR AI Cloud.</p>
+          <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Open a claim and ask Scribe to write its first revision on NEAR AI Cloud.</p>
         )}
       </section>
     </>

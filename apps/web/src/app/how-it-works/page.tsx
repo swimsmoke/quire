@@ -9,7 +9,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     h: "Claims are markets that never close",
     p: [
       "Every claim on Quire, such as whether Bitcoin will trade above $150,000, is a market with two outcomes. A Yes share pays 1 NEAR if the claim is eventually resolved true; a No share pays 1 NEAR if it is resolved false.",
-      "Markets have no end date. You can buy or sell at any time, so the price keeps reflecting what traders believe now. A claim is resolved only when it becomes definitively settled, after a proposal and a waiting period during which it can be challenged. If a claim proves ill-posed, it resolves invalid and every share redeems for 0.50.",
+      "Markets have no end date. You can buy or sell at any time, so the price keeps reflecting what traders believe now. A claim is resolved only when it becomes definitively settled, after a proposal and a waiting period during which it can be cancelled. If a claim proves ill-posed, it resolves invalid and every share redeems for 0.50.",
     ],
   },
   {
@@ -17,35 +17,37 @@ const SECTIONS: { h: string; p: string[] }[] = [
     p: [
       "Each market holds a pool of Yes and No shares. The implied probability of Yes is the share of No in the pool. Buying Yes takes Yes shares out, which makes the next one more expensive.",
       "That gives three different numbers, and Quire always shows them separately: the probability (the price of the next small share), your execution price (the average you actually pay, including price impact and the 1% fee), and your position value (at the current probability, and what selling everything now would really pay).",
-      "Every Yes and No pair is backed by exactly 1 NEAR of collateral, so the market can always pay out.",
+      "Every Yes and No pair is backed by exactly 1 NEAR held by the contract, so the market can always pay out.",
     ],
   },
   {
-    h: "People and agents trade under the same rules",
+    h: "Trading happens on NEAR, from your own wallet",
     p: [
-      "People confirm every trade in their NEAR wallet. AI agents trade from their own accounts with keys that can only call the market contract. The contract enforces each agent's limits: whether it is enabled, its largest single trade and its total spend. An agent can never withdraw funds; only its owner can take them back.",
-      "Every trade on the tape is marked as a person or an agent.",
-    ],
-  },
-  {
-    h: "Funding crosses chains with NEAR Intents and Chain Signatures",
-    p: [
-      "Quire runs on NEAR and every market is priced in NEAR, so the simplest way in is to deposit NEAR from your wallet. If your funds are on another chain, NEAR Intents gives you a quote and a one-time deposit address, and a network of solvers swaps the deposit into NEAR in your wallet. Quire follows each swap until it completes, fails or is refunded.",
-      "Chain Signatures lets a NEAR account control an address on another chain. Quire uses it to send a deposit from a chain where you hold funds without leaving NEAR. The two do different jobs: Chain Signatures signs; NEAR Intents routes and settles.",
+      "Quire's markets live in a smart contract on NEAR. You deposit NEAR into it from your wallet, and every deposit, trade and withdrawal is a transaction your wallet asks you to approve. Withdrawals stay open even if trading is paused, and nothing in the contract lets its owner move your balance.",
+      "After each trade, Quire's server looks the transaction up on NEAR itself before recording it, so the charts and history only ever show trades that really happened on-chain. This build runs on NEAR testnet, and the contract is unaudited.",
     ],
   },
   {
     h: "Evidence is checked by retrieval, not by opinion",
     p: [
-      "Scout, the research agent, and human traders submit sources with a quoted excerpt. Quire fetches each source itself, records when and what it retrieved, and marks whether the excerpt actually appears on the page. A model calling a source credible never counts as verification.",
+      "Anyone can submit a source with a quoted sentence. Scout, Quire's evidence checker, fetches the page itself, records when and what it retrieved, and marks whether the quote actually appears on the page. A model calling a source credible never counts as verification.",
+      "Only quotes found on the page are passed to the encyclopedia writer.",
     ],
   },
   {
     h: "Confidential AI writes the encyclopedia",
     p: [
-      "Each claim has a public page written by Scribe on NEAR AI Cloud, where inference runs inside hardware enclaves. Scribe receives the live probability and its history, trading activity, the verified evidence and the previous revision, and must return a fixed structure that Quire validates. It can cite only evidence Quire actually retrieved.",
-      "Pages are revised when something material changes, such as a large price move or new evidence, not on every trade. Every revision is kept.",
-      "Each revision records hashes of the exact request and response and the enclave's signature over them. That proves where and how the text was generated. It does not prove the text is correct, and the page says so.",
+      "Each claim has a public page written by Scribe on NEAR AI Cloud, where inference runs inside hardware enclaves. Scribe receives the live probability and its history, trading activity, the verified evidence and the previous revision, and must return a fixed structure that Quire validates. It can cite only evidence Quire actually retrieved; any other citation is dropped.",
+      "Pages are revised when something material changes, such as a price move of several points or newly verified evidence, not on every trade. Every revision is kept.",
+      "Each revision records hashes of the exact request and response, and Quire checks the enclave's signature over them. That shows where and how the text was generated. It does not prove the text is correct, and the page says so.",
+    ],
+  },
+  {
+    h: "What is planned next",
+    p: [
+      "Analysis and trading agents: the contract already enforces per-agent limits (an on/off switch, a largest trade, a total spend, and no withdrawals), but no trading agent runs in this build.",
+      "Cross-chain funding: NEAR Intents to swap an asset from another chain into NEAR, and Chain Signatures to sign that deposit from a NEAR account. Neither is connected yet.",
+      "Automatic source discovery for Scout, and an attested multi-model panel for the rare cases where a claim needs to be resolved.",
     ],
   },
 ];
@@ -53,7 +55,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
 export default function HowItWorks() {
   return (
     <>
-      <PageTitle title="How it works" subtitle="Quire connects markets, people, agents, cross-chain funding, evidence and confidential AI. Here is how the pieces fit, in the order a claim moves through them." />
+      <PageTitle title="How it works" subtitle="Quire connects markets, people, evidence and confidential AI. Here is how the pieces fit, in the order a claim moves through them, and what is still planned." />
       <Steps />
       <div className="mt-16 space-y-14">
         {SECTIONS.map((s) => (

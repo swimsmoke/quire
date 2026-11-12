@@ -3,7 +3,7 @@
  * Initial probabilities are the liquidity provider's STARTING PRICE, not a
  * forecast; the market moves them from there.
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { parseUnits } from "@quire/shared";
 import type { DB } from "./client.js";
 import { agentPermissions, agents, agentStrategies, markets } from "./schema.js";
@@ -67,41 +67,45 @@ export const SEED_AGENTS = [
     slug: "scout",
     name: "Scout",
     role: "RESEARCH" as const,
-    description: "Finds sources for a claim, extracts verbatim excerpts, and submits them as evidence. Every excerpt is checked against the fetched page by Quire, not by the model.",
+    enabled: true,
+    description: "Checks every source submitted for a claim: fetches the page itself and confirms the quoted text is really on it. Only quotes it finds reach the encyclopedia. Finding sources on its own is on the roadmap.",
     permissions: ["SUBMIT_EVIDENCE"],
+  },
+  {
+    slug: "scribe",
+    name: "Scribe",
+    role: "KNOWLEDGE" as const,
+    enabled: true,
+    description: "Writes and revises each claim's encyclopedia page from live market state and verified evidence, using confidential inference on NEAR AI Cloud. Each revision records the enclave's signature over the exact request and response.",
+    permissions: ["GENERATE_ARTICLE"],
   },
   {
     slug: "assessor",
     name: "Assessor",
     role: "ANALYSIS" as const,
-    description: "Weighs submitted evidence against the current market price and produces a structured, cited analysis with an independent probability estimate.",
+    enabled: false,
+    description: "Planned: weighs verified evidence against the market price and publishes an independent probability estimate. Not active in this build.",
     permissions: ["ANALYSE"],
   },
   {
     slug: "arbiter",
     name: "Arbiter",
     role: "TRADING" as const,
-    description: "Trades only when the Assessor's estimate differs from the market by more than its edge threshold, sized by fractional Kelly and capped by on-chain limits.",
+    enabled: false,
+    description: "Planned: trades only when the Assessor's estimate differs from the market by more than its threshold. The contract already enforces agent limits (enabled flag, largest trade, total spend, no withdrawals), but no trading agent runs in this build.",
     permissions: ["TRADE"],
     strategy: {
       name: "edge-threshold-fractional-kelly",
-      description: "Trade the side the analysis favours when |estimate - market| >= 8 points and confidence >= 0.6; size = 25% Kelly, capped at maxTrade and the remaining spend limit; never hold more than maxPositionPerMarket.",
+      description: "Planned strategy: trade the side the analysis favours when the estimate and the market differ by 8 points or more with confidence of at least 0.6, sized at a quarter of Kelly and capped by on-chain limits.",
       params: {
         edgeThresholdPpm: 80_000,
         minConfidence: 0.6,
         kellyFractionBps: 2_500,
-        maxTrade: parseUnits("25").toString(),
-        spendLimit: parseUnits("250").toString(),
-        maxPositionPerMarket: parseUnits("100").toString(),
+        maxTrade: parseUnits("0.25").toString(),
+        spendLimit: parseUnits("2").toString(),
+        maxPositionPerMarket: parseUnits("1").toString(),
       },
     },
-  },
-  {
-    slug: "scribe",
-    name: "Scribe",
-    role: "KNOWLEDGE" as const,
-    description: "Writes and revises each claim's encyclopedia page from live market state and verified evidence using confidential inference on NEAR AI Cloud.",
-    permissions: ["GENERATE_ARTICLE"],
   },
 ];
 
@@ -120,10 +124,17 @@ export async function seed(db: DB, opts: { executionMode?: "SIMULATED"; markets?
   for (const a of SEED_AGENTS) {
     const [row] = await db
       .insert(agents)
-      .values({ slug: a.slug, name: a.name, role: a.role, description: a.description, nearAccountId: null, enabled: true })
+      .values({ slug: a.slug, name: a.name, role: a.role, description: a.description, nearAccountId: null, enabled: a.enabled })
       .onConflictDoNothing()
       .returning();
-    if (!row) continue;
+    if (!row) {
+      // already seeded: keep the description and status current
+      await db.update(agents).set({ description: a.description, enabled: a.enabled }).where(eq(agents.slug, a.slug));
+      if ("strategy" in a && a.strategy) {
+        await db.execute(sql`update agent_strategies set description = ${a.strategy.description}, params = ${JSON.stringify(a.strategy.params)}::jsonb where agent_id = (select id from agents where slug = ${a.slug})`);
+      }
+      continue;
+    }
     for (const p of a.permissions) await db.insert(agentPermissions).values({ agentId: row.id, permission: p }).onConflictDoNothing();
     if ("strategy" in a && a.strategy) {
       await db.insert(agentStrategies).values({ agentId: row.id, name: a.strategy.name, description: a.strategy.description, params: a.strategy.params });

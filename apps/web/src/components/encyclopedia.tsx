@@ -23,7 +23,7 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
       <div className="max-w-[62ch]">
         <p className="font-serif text-title3">No article yet.</p>
         <p className="mt-2 text-sub text-label-2">
-          Scribe writes the first revision with confidential inference once this claim has verified evidence, then revises it when the price or the evidence changes materially. Nothing here is pre-written.
+          Scribe writes each revision with confidential inference on NEAR AI Cloud, from the live price and the verified evidence listed here, and revises it when either changes materially. Nothing here is pre-written.
         </p>
       </div>
     );
@@ -91,11 +91,11 @@ function InferenceMeta({ inf }: { inf: NonNullable<NonNullable<Encyclopedia["cur
         <dt className="text-label-2">Enclave signing key</dt>
         <dd className="font-mono break-all">{inf.signingAddress ?? "n/a"}</dd>
         <dt className="text-label-2">Signature</dt>
-        <dd>{inf.signatureVerified == null ? "Not checked" : verified ? "Valid: signed by the enclave key" : "Failed verification"}</dd>
+        <dd>{inf.signatureVerified == null ? "Not available" : verified ? "Valid: the enclave key signed the hashes of exactly what Quire sent and received" : "Failed verification"}</dd>
         <dt className="text-label-2">Attestation</dt>
-        <dd>{inf.attestationBindsSigner == null ? "Not checked" : inf.attestationBindsSigner ? "Key bound to attested hardware" : "Key not bound"}</dd>
+        <dd>{inf.attestationBindsSigner == null ? "Not checked" : inf.attestationBindsSigner ? "Signing key is listed in NEAR AI's attestation report for this model" : "Signing key not found in the attestation report"}</dd>
       </dl>
-      <p className="mt-3 text-footnote text-label-2">Attestation shows where and how the text was generated. It says nothing about whether the content is correct.</p>
+      <p className="mt-3 text-footnote text-label-2">This shows where and how the text was generated. Quire checks the signature and the report listing, not the hardware quote itself, and none of it says whether the content is correct.</p>
     </details>
   );
 }
@@ -110,7 +110,7 @@ const VERIFY_LABEL: Record<Evidence["verificationStatus"], string> = {
 
 export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   if (!evidence.length) {
-    return <p className="max-w-[62ch] text-sub text-label-2">No evidence yet. Scout and traders add sources here, and Quire fetches each one to check the quoted excerpt is really on the page.</p>;
+    return <p className="max-w-[62ch] text-sub text-label-2">No evidence yet. Add a source with a quote, and Quire fetches the page to check the quote is really on it.</p>;
   }
   return (
     <ol className="divide-y hairline border-y hairline">
