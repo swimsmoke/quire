@@ -82,7 +82,7 @@ jobs:
           TVL_CAP: ${{ inputs.tvl_cap_near }}
           HOURS: ${{ inputs.challenge_period_hours }}
           KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
-          QUIRE_DEPLOY_SEED: ${{ secrets.QUIRE_DEPLOY_SEED }}
+          QUIRE_DEPLOY_SEED: ${{ secrets.QUIRE_DEPLOY_SEED || vars.QUIRE_DEPLOY_SEED }}
           NET: ${{ inputs.network }}
         run: |
           set -euo pipefail
@@ -90,8 +90,9 @@ jobs:
           # QUIRE_DEPLOY_SEED passphrase and the contract account is created by the faucet.
           if [[ -z "$KEY" && "$NET" == "testnet" && -n "$QUIRE_DEPLOY_SEED" ]]; then
             pip install -q cryptography
-            mapfile -t K < <(python3 scripts/derive_key.py "$CONTRACT")
-            PUB="${K[0]}"; KEY="${K[1]}"
+            [[ ${#QUIRE_DEPLOY_SEED} -ge 16 ]] || { echo "QUIRE_DEPLOY_SEED must be at least 16 characters long"; exit 1; }
+            DERIVED=$(python3 scripts/derive_key.py "$CONTRACT")
+            PUB=$(sed -n 1p <<<"$DERIVED"); KEY=$(sed -n 2p <<<"$DERIVED")
             echo "::add-mask::$KEY"
             if ! near account view-account-summary "$CONTRACT" network-config testnet now >/dev/null 2>&1; then
               echo "creating $CONTRACT via the testnet faucet"
@@ -100,7 +101,7 @@ jobs:
               sleep 5
             fi
           fi
-          [[ -n "$KEY" ]] || { echo "set secret QUIRE_DEPLOY_SEED (testnet) or QUIRE_CONTRACT_PRIVATE_KEY"; exit 1; }
+          [[ -n "$KEY" ]] || { echo "No secret found. In the repo: Settings -> Environments -> quire -> Environment secrets -> Add environment secret, name QUIRE_DEPLOY_SEED, value = any passphrase of 16+ characters."; exit 1; }
           near account view-account-summary "$CONTRACT" network-config "$NET" now
           # contract units are micro-NEAR (10^-6 NEAR)
           to_units() { python3 -c "from decimal import Decimal as D; import sys; v=D(sys.argv[1]); assert v>0; print(int(v*10**6))" "$1"; }
