@@ -27,13 +27,17 @@ interface Done {
   avg: number;
   prob: number;
   duplicate?: boolean;
+  /** on-chain: sent and final on NEAR, but not yet recorded by Quire */
+  pending?: boolean;
+  txHash?: string;
 }
 
 const AMOUNT_RE = /^\d{0,12}(\.\d{0,6})?$/;
 
 export function TradeTicket({ market }: { market: Market }) {
   const router = useRouter();
-  const { me, token, balance, refresh, claimTestFunds } = useSession();
+  const { me, token, balance, refresh, claimTestFunds, onchain, callContract, chain } = useSession();
+  const accountId = me?.session.accountId ?? null;
   const [outcome, setOutcome] = useState<Outcome>("YES");
   const [side, setSide] = useState<Side>("BUY");
   const [amount, setAmount] = useState("");
@@ -49,13 +53,16 @@ export function TradeTicket({ market }: { market: Market }) {
   const orderId = useRef<string | null>(null);
 
   const simulated = market.executionMode === "SIMULATED";
+  const onMarketChain = !simulated && onchain && market.onchainId != null;
+  const explorer = chain.network === "mainnet" ? "https://nearblocks.io/txns/" : "https://testnet.nearblocks.io/txns/";
   const held = holding ? (outcome === "YES" ? holding.yesShares : holding.noShares) : "0";
 
   const loadHolding = useCallback(async () => {
-    if (!token) return setHolding(null);
-    const pf = await clientRequest<{ positions: (Holding & { market: { slug: string } })[] }>("/portfolio", { token }).catch(() => null);
+    if (!accountId) return setHolding(null);
+    const path = onchain ? `/portfolio?account=${encodeURIComponent(accountId)}` : "/portfolio";
+    const pf = await clientRequest<{ positions: (Holding & { market: { slug: string } })[] }>(path, { token }).catch(() => null);
     setHolding(pf?.positions.find((p) => p.market.slug === market.slug) ?? null);
-  }, [token, market.slug]);
+  }, [token, accountId, onchain, market.slug]);
   useEffect(() => {
     loadHolding();
   }, [loadHolding]);
@@ -103,6 +110,45 @@ export function TradeTicket({ market }: { market: Market }) {
     if (!quote || !orderId.current) return;
     setSubmitting(true);
     setError(null);
+    if (onMarketChain) {
+      // 1) the wallet signs and sends the trade to the contract; 2) Quire verifies the transaction on NEAR and records it.
+      let hash: string;
+      try {
+        const units = parseUnits(amount).toString();
+        hash =
+          side === "BUY"
+            ? await callContract("buy", { market_id: market.onchainId, outcome, amount: units, min_shares_out: quote.minAmountOut, client_order_id: orderId.current }, { depositYocto: "1" })
+            : await callContract("sell", { market_id: market.onchainId, outcome, shares: units, min_collateral_out: quote.minAmountOut, client_order_id: orderId.current }, { depositYocto: "1" });
+      } catch (e) {
+        setError((e as Error).message);
+        orderId.current = null;
+        setReviewing(false);
+        setSubmitting(false);
+        return;
+      }
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const r = await clientRequest<{ trades: { trade: { shares: string; collateral: string; avgPricePpm: number }; market: { probabilityYesPpm: number } }[] }>("/onchain/trades", {
+            method: "POST",
+            body: { txHash: hash, signerId: accountId },
+          });
+          const t = r.trades[0];
+          setDone(t ? { side, outcome, shares: t.trade.shares, collateral: t.trade.collateral, avg: t.trade.avgPricePpm, prob: t.market.probabilityYesPpm, txHash: hash } : { side, outcome, shares: "0", collateral: "0", avg: 0, prob: market.probabilityYesPpm, duplicate: true, txHash: hash });
+          break;
+        } catch (e) {
+          if (attempt < 4 && e instanceof ApiError && (e.code === "TX_NOT_FOUND" || e.code === "RPC_ERROR")) {
+            await new Promise((res) => setTimeout(res, 2500));
+            continue;
+          }
+          // The trade is final on NEAR even if Quire's record is late.
+          setDone({ side, outcome, shares: "0", collateral: "0", avg: 0, prob: market.probabilityYesPpm, pending: true, txHash: hash });
+          break;
+        }
+      }
+      finish();
+      setSubmitting(false);
+      return;
+    }
     try {
       const r = await clientRequest<{ trade: { shares: string; collateral: string; avgPricePpm: number }; market: { probabilityYesPpm: number } }>(`/markets/${market.slug}/trades`, {
         method: "POST",
@@ -183,7 +229,7 @@ export function TradeTicket({ market }: { market: Market }) {
             <span className="text-sub text-label-2">{side === "BUY" ? "NEAR" : "shares"}</span>
           </div>
           <div className="mt-3 flex gap-2">
-            {(side === "BUY" ? ["10", "50", "100"] : []).map((d) => (
+            {(side === "BUY" ? (onMarketChain ? ["0.05", "0.1", "0.25"] : ["10", "50", "100"]) : []).map((d) => (
               <button key={d} type="button" onClick={() => addAmount(d)} className="h-8 rounded-md bg-fill px-3 text-footnote font-medium transition-[background-color,transform] duration-200 hover:bg-fill-2 active:scale-95">
                 +{d}
               </button>
@@ -236,10 +282,10 @@ export function TradeTicket({ market }: { market: Market }) {
           </p>
         )}
 
-        {!simulated ? (
-          <p className="text-sub text-label-2">This market settles on NEAR. Wallet-signed trading arrives with NEAR wallet sign-in.</p>
+        {!simulated && !onMarketChain ? (
+          <p className="text-sub text-label-2">This market settles on NEAR, but this deployment isn&apos;t connected to the contract.</p>
         ) : !me ? (
-          <p className="text-sub text-label-2">Sign in to trade.</p>
+          <p className="text-sub text-label-2">{onMarketChain ? "Connect your wallet to trade." : "Sign in to trade."}</p>
         ) : (
           <button onClick={review} disabled={!quote} className={`${buttonPrimary} w-full`}>
             Review {side === "BUY" ? "buy" : "sell"}
@@ -264,8 +310,10 @@ export function TradeTicket({ market }: { market: Market }) {
 
           <h3 className="mt-8 text-sub font-semibold">Funds</h3>
           <p className="tabular mt-1 text-sub">
-            {fmtNear(balance)} NEAR available{simulated && <span className="text-label-2"> (test funds)</span>}
+            {fmtNear(balance, 4)} NEAR {onMarketChain ? "deposited in Quire" : "available"}
+            {simulated && <span className="text-label-2"> (test funds)</span>}
           </p>
+          {onMarketChain && <ChainFunds />}
           {simulated && (
             <button
               className={`${buttonSecondary} mt-3 h-9 px-4`}
@@ -283,7 +331,7 @@ export function TradeTicket({ market }: { market: Market }) {
           )}
           {fundMsg && <p className="mt-2 text-footnote text-label-2">{fundMsg}</p>}
           <p className="mt-5 text-footnote text-label-2">
-            <span className="font-medium text-label">Deposit from another chain.</span> NEAR Intents can swap an asset from another chain into NEAR in your wallet, ready to deposit. Not connected in this build, so no swap can be started yet.
+            <span className="font-medium text-label">From another chain.</span> NEAR Intents can swap an asset from another chain into NEAR in your wallet, ready to deposit. Not connected in this build, so no swap can be started yet.
           </p>
         </div>
       )}
@@ -296,10 +344,17 @@ export function TradeTicket({ market }: { market: Market }) {
               <path d="M15 27 l7 7 l15 -16" fill="none" stroke="var(--yes)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={1} className="anim-check" />
             </svg>
             <p className="mt-3 text-sub" role="status">
-              {done.duplicate
+              {done.pending
+                ? "Your trade is final on NEAR. Quire's record of it is catching up; refresh in a moment."
+                : done.duplicate
                 ? "This order had already executed. Your position and history show it."
                 : `${done.side === "BUY" ? "Bought" : "Sold"} ${fmtNear(done.shares)} ${done.outcome === "YES" ? "Yes" : "No"} shares for ${fmtNear(done.collateral)} NEAR at ${price(done.avg)} average. Yes is now ${pct(done.prob)}.`}
             </p>
+            {done.txHash && (
+              <a href={`${explorer}${done.txHash}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-footnote text-tint hover:underline">
+                View the transaction on NEAR
+              </a>
+            )}
             <button data-autofocus onClick={() => setReviewing(false)} className={`${buttonPrimary} mt-5 w-full`}>
               Done
             </button>
@@ -323,14 +378,72 @@ export function TradeTicket({ market }: { market: Market }) {
                 </p>
               )}
               <button data-autofocus onClick={confirm} disabled={submitting} className={`${buttonPrimary} mt-5 w-full`}>
-                {submitting ? "Placing order…" : `Confirm ${side === "BUY" ? "buy" : "sell"}`}
+                {submitting ? (onMarketChain ? "Waiting for your wallet…" : "Placing order…") : `Confirm ${side === "BUY" ? "buy" : "sell"}`}
               </button>
-              <p className="mt-3 text-center text-caption text-label-3">Simulated trade on Quire&apos;s test ledger</p>
+              <p className="mt-3 text-center text-caption text-label-3">
+                {onMarketChain ? `Your wallet will ask you to approve this on NEAR ${chain.network}` : "Simulated trade on Quire's test ledger"}
+              </p>
             </div>
           )
         )}
       </Sheet>
     </section>
+  );
+}
+
+/** Deposit NEAR into, or withdraw it from, your Quire trading balance. */
+export function ChainFunds() {
+  const { balance, registered, callContract, refresh } = useSession();
+  const [amt, setAmt] = useState("");
+  const [busy, setBusy] = useState<"deposit" | "withdraw" | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const valid = AMOUNT_RE.test(amt) && Number(amt) > 0;
+
+  async function run(kind: "deposit" | "withdraw") {
+    setBusy(kind);
+    setMsg(null);
+    try {
+      const units = parseUnits(amt);
+      if (kind === "deposit") await callContract("deposit", {}, { depositYocto: (units * 10n ** 18n).toString(), gasTgas: 30 });
+      else {
+        if (units > BigInt(balance)) throw new Error("That's more than your Quire balance.");
+        await callContract("withdraw", { amount: units.toString() }, { depositYocto: "1", gasTgas: 60 });
+      }
+      setMsg(kind === "deposit" ? `Deposited ${amt} NEAR.` : `Withdrew ${amt} NEAR to your wallet.`);
+      setAmt("");
+      setTimeout(refresh, 1500);
+      await refresh();
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <label htmlFor="fund-amt" className="text-footnote text-label-2">
+        Move NEAR between your wallet and Quire
+      </label>
+      <div className="mt-1.5 flex h-10 items-center rounded-lg bg-bg-2 px-3 ring-tint transition-shadow focus-within:ring-2">
+        <input id="fund-amt" inputMode="decimal" value={amt} onChange={(e) => AMOUNT_RE.test(e.target.value) && setAmt(e.target.value)} placeholder="0.5" className="tabular w-full bg-transparent text-body outline-none placeholder:text-label-3" />
+        <span className="text-sub text-label-2">NEAR</span>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <button disabled={!valid || busy !== null} onClick={() => run("deposit")} className={`${buttonPrimary} h-9 flex-1 px-3`}>
+          {busy === "deposit" ? "Check your wallet…" : "Deposit"}
+        </button>
+        <button disabled={!valid || busy !== null || !registered} onClick={() => run("withdraw")} className={`${buttonSecondary} h-9 flex-1 px-3`}>
+          {busy === "withdraw" ? "Check your wallet…" : "Withdraw"}
+        </button>
+      </div>
+      {!registered && <p className="mt-2 text-footnote text-label-2">Your first deposit also registers you, which costs about 0.003 NEAR.</p>}
+      {msg && (
+        <p role="status" className="mt-2 text-footnote text-label-2">
+          {msg}
+        </p>
+      )}
+    </div>
   );
 }
 

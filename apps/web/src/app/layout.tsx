@@ -37,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <SessionProvider>
+        <SessionProvider chain={{ mode: health?.executionMode ?? "SIMULATED", contractId: (health?.integrations.marketContract as string | null) ?? null, network: health?.network ?? "testnet" }}>
           <NavBar simulated={health?.executionMode === "SIMULATED"} />
           {!health && (
             <p className="mx-auto max-w-[1120px] px-5 pt-4 text-sub text-no">The Quire API isn&apos;t reachable, so live data can&apos;t load. Start it with pnpm dev:api.</p>

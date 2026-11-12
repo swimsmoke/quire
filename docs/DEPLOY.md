@@ -20,7 +20,7 @@ market as invalid and redeem the pool, which returns the liquidity minus any tra
 1. **Create your own accounts in Meteor Wallet** (wallet.meteorwallet.app or the browser extension),
    switched to **Testnet**: one owner account and two demo accounts. MyNearWallet no longer creates accounts.
    Top them up with free test NEAR at near-faucet.io if needed.
-2. **Add one secret in GitHub**: repo Settings -> Environments -> New environment `testnet`
+2. **Add one secret in GitHub**: repo Settings -> Environments -> environment `quire`
    -> Add environment secret `QUIRE_DEPLOY_SEED` = any passphrase of 16 or more characters that you make up.
 3. **Deploy**: Actions -> `deploy-contract` -> Run workflow. Pick `testnet`, choose a new name for the
    contract account (for example `quire-markets.testnet`) and enter your owner account.

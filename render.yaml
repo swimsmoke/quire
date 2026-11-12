@@ -1,0 +1,28 @@
+# Render blueprint for the Quire API (free plan). Database: Neon Postgres.
+services:
+  - type: web
+    name: quire-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
+    startCommand: pnpm --filter @quire/api start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false # Neon connection string
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: WEB_ORIGIN
+        sync: false # your Vercel URL, e.g. https://quire.vercel.app
+      - key: QUIRE_EXECUTION_MODE
+        value: ONCHAIN_TESTNET
+      - key: NEAR_NETWORK
+        value: testnet
+      - key: NEAR_RPC_URL
+        value: https://test.rpc.fastnear.com
+      - key: QUIRE_MARKET_CONTRACT
+        sync: false # the contract account, e.g. quire-markets.testnet
+      - key: NEAR_AI_API_KEY
+        sync: false # from cloud.near.ai

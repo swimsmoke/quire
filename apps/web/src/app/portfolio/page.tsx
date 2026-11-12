@@ -15,7 +15,7 @@ interface Portfolio {
   accountId: string;
   balances: { executionMode: string; available: string }[];
   positions: {
-    market: { slug: string; question: string; probabilityYesPpm: number; status: string; executionMode: "SIMULATED" | "ONCHAIN_TESTNET" };
+    market: { slug: string; question: string; probabilityYesPpm: number; status: string; executionMode: "SIMULATED" | "ONCHAIN_TESTNET" | "ONCHAIN_MAINNET" };
     yesShares: string;
     noShares: string;
     costBasis: string;
@@ -33,23 +33,25 @@ const signed = (v: string) => `${BigInt(v) > 0n ? "+" : BigInt(v) < 0n ? "−" :
 const tone = (v: string) => (BigInt(v) > 0n ? "text-yes" : BigInt(v) < 0n ? "text-no" : "text-label-2");
 
 export default function PortfolioPage() {
-  const { me, token, ready } = useSession();
+  const { me, token, ready, onchain, balance: sessionBalance } = useSession();
+  const accountId = me?.session.accountId;
   const [pf, setPf] = useState<Portfolio | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"positions" | "trades" | "funding">("positions");
 
   useEffect(() => {
-    if (!token) return;
-    clientRequest<Portfolio>("/portfolio", { token }).then(setPf, (e) => setError((e as Error).message));
-  }, [token]);
+    if (!accountId) return;
+    const path = onchain ? `/portfolio?account=${encodeURIComponent(accountId)}` : "/portfolio";
+    clientRequest<Portfolio>(path, { token }).then(setPf, (e) => setError((e as Error).message));
+  }, [token, accountId, onchain]);
 
   if (!ready) return <PageTitle title="Portfolio" />;
-  if (!me) return <PageTitle title="Portfolio" subtitle="Sign in to see your positions, trades and funding history." />;
+  if (!me) return <PageTitle title="Portfolio" subtitle={onchain ? "Connect your wallet to see your positions and trades." : "Sign in to see your positions, trades and funding history."} />;
   if (error) return <PageTitle title="Portfolio" subtitle={<span className="text-no">{error}</span>} />;
   if (!pf) return <PageTitle title="Portfolio" subtitle="Loading…" />;
 
   const open = pf.positions.filter((p) => BigInt(p.yesShares) > 0n || BigInt(p.noShares) > 0n);
-  const balance = pf.balances.find((b) => b.executionMode === "SIMULATED")?.available ?? "0";
+  const balance = onchain ? sessionBalance : (pf.balances.find((b) => b.executionMode === "SIMULATED")?.available ?? "0");
   const total = (BigInt(balance) + BigInt(pf.totals.markValue)).toString();
 
   return (

@@ -1,7 +1,7 @@
 name: deploy-contract
 
 # Manual only: Actions tab -> deploy-contract -> Run workflow.
-# Needs a GitHub environment named after the network ("testnet" or "mainnet").
+# Uses the GitHub environment "quire" for testnet and "mainnet" for mainnet.
 # testnet: secret QUIRE_DEPLOY_SEED = any passphrase of 16+ characters; the workflow derives
 #          the contract key from it and creates the contract account through the faucet.
 # mainnet: secret QUIRE_CONTRACT_PRIVATE_KEY (full-access key of the CONTRACT account, ed25519:...).
@@ -39,7 +39,7 @@ concurrency: deploy-${{ inputs.network }}
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.network }}
+    environment: ${{ inputs.network == 'testnet' && 'quire' || 'mainnet' }}
     env:
       NEAR_CLI_VERSION: "0.31.1"
     steps:

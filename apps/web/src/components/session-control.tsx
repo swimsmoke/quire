@@ -6,7 +6,7 @@ import { fmtNear } from "@/lib/format";
 import { buttonPrimary, Sheet } from "./ui";
 
 export function SessionControl() {
-  const { me, ready, balance, signInSimulated, signOut } = useSession();
+  const { me, ready, balance, signInSimulated, signOut, onchain, connectWallet, chain } = useSession();
   const [open, setOpen] = useState(false);
   const [account, setAccount] = useState(false);
   const [handle, setHandle] = useState("");
@@ -32,12 +32,12 @@ export function SessionControl() {
               <dd>{me.session.accountId}</dd>
             </div>
             <div className="flex justify-between py-3">
-              <dt className="text-label-2">Available</dt>
+              <dt className="text-label-2">{onchain ? "Deposited in Quire" : "Available"}</dt>
               <dd className="tabular">{fmtNear(balance)} NEAR</dd>
             </div>
             <div className="flex justify-between py-3">
               <dt className="text-label-2">Sign-in method</dt>
-              <dd>{me.session.method === "DEV_SIM" ? "Simulated account" : "NEAR wallet"}</dd>
+              <dd>{me.session.method === "DEV_SIM" ? "Simulated account" : `NEAR wallet (${chain.network})`}</dd>
             </div>
           </dl>
           <button
@@ -47,8 +47,33 @@ export function SessionControl() {
             }}
             className="mt-4 h-11 w-full rounded-md bg-fill text-sub font-semibold text-no transition-transform active:scale-[0.98]"
           >
-            Sign out
+            {onchain ? "Disconnect wallet" : "Sign out"}
           </button>
+        </Sheet>
+      </>
+    );
+  }
+
+  if (onchain) {
+    return (
+      <>
+        <button
+          onClick={async () => {
+            setError(null);
+            try {
+              await connectWallet();
+            } catch (e) {
+              setError((e as Error).message || "Couldn't connect the wallet.");
+              setOpen(true);
+            }
+          }}
+          className="h-8 rounded-md bg-tint px-4 text-footnote font-semibold text-on-accent transition-[transform,background-color] duration-200 hover:bg-tint-press active:scale-95"
+        >
+          Connect wallet
+        </button>
+        <Sheet open={open} onClose={() => setOpen(false)} title="Wallet not connected">
+          <p className="text-sub text-label-2">{error}</p>
+          <p className="mt-3 text-sub text-label-2">Quire runs on NEAR {chain.network}. Use a NEAR wallet such as Meteor Wallet, switched to {chain.network}.</p>
         </Sheet>
       </>
     );

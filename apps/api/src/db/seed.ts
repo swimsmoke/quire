@@ -105,8 +105,8 @@ export const SEED_AGENTS = [
   },
 ];
 
-export async function seed(db: DB, opts: { executionMode?: "SIMULATED" } = {}) {
-  for (const s of SEED_MARKETS) {
+export async function seed(db: DB, opts: { executionMode?: "SIMULATED"; markets?: boolean } = {}) {
+  for (const s of opts.markets === false ? [] : SEED_MARKETS) {
     const exists = await db.select({ id: markets.id }).from(markets).where(eq(markets.slug, s.slug));
     if (exists[0]) continue;
     await createMarket(db, {

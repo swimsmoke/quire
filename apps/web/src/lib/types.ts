@@ -166,7 +166,7 @@ export interface Agent {
 
 export interface Health {
   ok: boolean;
-  executionMode: "SIMULATED" | "ONCHAIN_TESTNET";
-  network: string;
+  executionMode: "SIMULATED" | "ONCHAIN_TESTNET" | "ONCHAIN_MAINNET";
+  network: "testnet" | "mainnet";
   integrations: Record<string, string | boolean | null>;
 }

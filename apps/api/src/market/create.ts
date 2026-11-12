@@ -18,10 +18,14 @@ export interface NewMarketInput {
   executionMode: ExecMode;
   contractId?: string;
   onchainId?: number;
+  /** Mirror exact on-chain pool values instead of computing them. */
+  exactPool?: { yes: bigint; no: bigint; lpYes: bigint; lpNo: bigint };
 }
 
 export async function createMarket(db: DB, input: NewMarketInput) {
-  const seed = seedPool(input.liquidity, input.initialProbPpm);
+  const seed = input.exactPool
+    ? { pool: { yes: input.exactPool.yes, no: input.exactPool.no }, lpYes: input.exactPool.lpYes, lpNo: input.exactPool.lpNo, sets: input.liquidity }
+    : seedPool(input.liquidity, input.initialProbPpm);
   return db.transaction(async (tx) => {
     const [claim] = await tx
       .insert(claims)

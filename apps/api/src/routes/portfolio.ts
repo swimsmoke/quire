@@ -5,7 +5,13 @@ import { accountBalances, claims, fundingRequests, markets, positions, trades } 
 
 export async function portfolioRoutes(app: FastifyInstance) {
   app.get("/portfolio", async (req, reply) => {
-    const s = await app.requireSession(req, reply);
+    const q = req.query as { account?: string };
+    const onchain = app.cfg.QUIRE_EXECUTION_MODE !== "SIMULATED";
+    // On-chain positions are public data, so they can be read by account id. Simulated mode needs a session.
+    const s =
+      onchain && typeof q.account === "string" && /^[a-z0-9._-]{2,64}$/.test(q.account)
+        ? { accountId: q.account, userId: null as string | null }
+        : await app.requireSession(req, reply);
     const balances = await app.db.select().from(accountBalances).where(eq(accountBalances.traderAccount, s.accountId));
     const rows = await app.db
       .select()
@@ -44,7 +50,7 @@ export async function portfolioRoutes(app: FastifyInstance) {
       .where(eq(trades.traderAccount, s.accountId))
       .orderBy(desc(trades.createdAt))
       .limit(100);
-    const funding = await app.db.select().from(fundingRequests).where(eq(fundingRequests.userId, s.userId)).orderBy(desc(fundingRequests.createdAt)).limit(50);
+    const funding = s.userId ? await app.db.select().from(fundingRequests).where(eq(fundingRequests.userId, s.userId)).orderBy(desc(fundingRequests.createdAt)).limit(50) : [];
     return {
       accountId: s.accountId,
       balances,

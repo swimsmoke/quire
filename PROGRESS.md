@@ -28,6 +28,14 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 - Manual GitHub Action `deploy-contract`; guide in docs/DEPLOY.md. CI builds the wasm on every push.
 - Simulated mode (local dev and tests) labels its balances "test NEAR"; they have no value.
 
+## On-chain trading (12 Nov), testnet
+- Wallet connection through NEAR Connect (Meteor and others); deposit, withdraw, buy and sell are wallet-signed contract calls.
+- API verifies each transaction hash against NEAR RPC and mirrors the contract's events (5 tests with a fake RPC).
+- Owner page `/admin`: deposit and create markets from the owner's wallet.
+- Deployed mode shows only markets that exist on the contract; no sample data.
+- No sign-in needed on-chain: positions and trades are public chain data, read by account id.
+- NOT yet run against the live network from this workspace (no network route to NEAR): first real run is the deployed site.
+
 ## ⚠️ Not yet verified in this workspace
 
 - **Contract wasm build + testnet deploy**: this workspace cannot download the wasm Rust target. CI workflow (`.github/workflows/ci.yml`) builds it on GitHub, or run `contracts/build.sh` locally.
