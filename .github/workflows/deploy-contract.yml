@@ -64,10 +64,16 @@ jobs:
 
       - name: Validate inputs
         env:
-          CONTRACT: ${{ inputs.contract_account_id }}
-          OWNER: ${{ inputs.owner_account_id }}
+          CONTRACT_IN: ${{ inputs.contract_account_id }}
+          OWNER_IN: ${{ inputs.owner_account_id }}
           NET: ${{ inputs.network }}
         run: |
+          # Accept names typed without the network ending: "quire-markets" -> "quire-markets.testnet"
+          SUFFIX=$([[ "$NET" == "testnet" ]] && echo ".testnet" || echo ".near")
+          fix() { local n; n=$(echo "$1" | tr 'A-Z' 'a-z' | tr -d ' '); [[ "$n" == *"$SUFFIX" ]] || n="$n$SUFFIX"; echo "$n"; }
+          CONTRACT=$(fix "$CONTRACT_IN"); OWNER=$(fix "$OWNER_IN")
+          echo "contract account: $CONTRACT / owner: $OWNER"
+          echo "CONTRACT=$CONTRACT" >> "$GITHUB_ENV"; echo "OWNER=$OWNER" >> "$GITHUB_ENV"
           re='^(([a-z0-9]+[-_])*[a-z0-9]+\.)*([a-z0-9]+[-_])*[a-z0-9]+$'
           [[ "$CONTRACT" =~ $re && "$OWNER" =~ $re ]] || { echo "invalid account id"; exit 1; }
           [[ "$CONTRACT" != "$OWNER" ]] || { echo "use a separate contract account"; exit 1; }
@@ -75,8 +81,6 @@ jobs:
 
       - name: Deploy
         env:
-          CONTRACT: ${{ inputs.contract_account_id }}
-          OWNER: ${{ inputs.owner_account_id }}
           INIT: ${{ inputs.initialize }}
           ACCOUNT_CAP: ${{ inputs.account_cap_near }}
           TVL_CAP: ${{ inputs.tvl_cap_near }}
