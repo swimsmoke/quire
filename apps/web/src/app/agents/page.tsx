@@ -50,7 +50,7 @@ export default async function AgentsPage() {
             <section key={a.id} aria-labelledby={`agent-${a.slug}`} className="grid gap-x-14 gap-y-6 border-t hairline pt-8 lg:grid-cols-2">
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-[12px] bg-tint/12 text-tint">
+                  <span className="grid size-11 place-items-center rounded-lg bg-tint/12 text-tint">
                     <Icon size={21} strokeWidth={1.8} aria-hidden />
                   </span>
                   <div>
@@ -66,7 +66,7 @@ export default async function AgentsPage() {
                 <p className="mt-4 max-w-[58ch] text-body text-label-2">{a.description}</p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {a.permissions.map((p) => (
-                    <span key={p} className="rounded-full bg-fill px-3 py-1 text-footnote font-medium">
+                    <span key={p} className="rounded-md bg-fill px-3 py-1 text-footnote font-medium">
                       {PERMISSION[p] ?? p}
                     </span>
                   ))}

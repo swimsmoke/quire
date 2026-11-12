@@ -1,8 +1,8 @@
-# Deploying Quire to NEAR mainnet
+# Deploying Quire to NEAR (testnet for the hackathon)
 
 Quire's markets are priced and settled in **native NEAR**. A Yes or No share pays 1 NEAR
 if the claim resolves its way. There is no separate token to create or buy.
-The contract is **unaudited**, so it ships with safety caps and every amount below is kept small.
+For the hackathon Quire runs on **NEAR testnet** (free test NEAR from the faucet). Mainnet works the same way with real NEAR; the contract is **unaudited**, so it ships with safety caps.
 
 ## What you need
 
@@ -17,14 +17,14 @@ market as invalid and redeem the pool, which returns the liquidity minus any tra
 
 ## Steps
 
-1. **Create the accounts** in any NEAR wallet listed at wallet.near.org (mainnet: names end in `.near`).
-   Fund them as above.
+1. **Create the accounts** at testnet.mynearwallet.com (names end in `.testnet`) and fund each
+   with free test NEAR from near-faucet.io.
 2. **Export the contract account's private key** from its wallet (it starts with `ed25519:`).
    Never paste it into chat, an issue, or a commit.
-3. **Store it in GitHub**: repo Settings -> Environments -> New environment `mainnet`
+3. **Store it in GitHub**: repo Settings -> Environments -> New environment `testnet`
    -> Add environment secret `QUIRE_CONTRACT_PRIVATE_KEY` = the key.
    Optionally add yourself as a required reviewer so every deploy needs your click.
-4. **Deploy**: Actions -> `deploy-mainnet` -> Run workflow. Enter the contract account and
+4. **Deploy**: Actions -> `deploy-contract` -> Run workflow. Pick `testnet`, enter the contract account and
    your main account, keep the default caps (10 NEAR per account, 100 NEAR in total).
    The job runs all contract tests, builds the wasm, deploys, initialises, and prints `get_config`.
 5. **Upgrades** later: run the same workflow with *First deploy* unticked.

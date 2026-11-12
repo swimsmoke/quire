@@ -1,11 +1,17 @@
-name: deploy-mainnet
+name: deploy-contract
 
-# Manual only: Actions tab -> deploy-mainnet -> Run workflow.
-# Needs the GitHub environment "mainnet" with secret QUIRE_CONTRACT_PRIVATE_KEY
-# (full-access key of the CONTRACT account, format ed25519:...). See docs/DEPLOY_MAINNET.md.
+# Manual only: Actions tab -> deploy-contract -> Run workflow.
+# Needs a GitHub environment named after the network ("testnet" or "mainnet") with secret
+# QUIRE_CONTRACT_PRIVATE_KEY (full-access key of the CONTRACT account, format ed25519:...).
+# See docs/DEPLOY.md.
 on:
   workflow_dispatch:
     inputs:
+      network:
+        description: "NEAR network"
+        type: choice
+        options: [testnet, mainnet]
+        default: testnet
       contract_account_id:
         description: "Account the contract is deployed to (holds 3.5 NEAR for storage)"
         required: true
@@ -26,12 +32,12 @@ on:
         description: "Resolution challenge window"
         default: "24"
 
-concurrency: deploy-mainnet
+concurrency: deploy-${{ inputs.network }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: mainnet
+    environment: ${{ inputs.network }}
     env:
       NEAR_CLI_VERSION: "0.31.1"
     steps:
@@ -58,12 +64,13 @@ jobs:
         env:
           CONTRACT: ${{ inputs.contract_account_id }}
           OWNER: ${{ inputs.owner_account_id }}
+          NET: ${{ inputs.network }}
         run: |
           re='^(([a-z0-9]+[-_])*[a-z0-9]+\.)*([a-z0-9]+[-_])*[a-z0-9]+$'
           [[ "$CONTRACT" =~ $re && "$OWNER" =~ $re ]] || { echo "invalid account id"; exit 1; }
           [[ "$CONTRACT" != "$OWNER" ]] || { echo "use a separate contract account"; exit 1; }
-          near account view-account-summary "$CONTRACT" network-config mainnet now
-          near account view-account-summary "$OWNER" network-config mainnet now
+          near account view-account-summary "$CONTRACT" network-config "$NET" now
+          near account view-account-summary "$OWNER" network-config "$NET" now
 
       - name: Deploy
         env:
@@ -74,6 +81,7 @@ jobs:
           TVL_CAP: ${{ inputs.tvl_cap_near }}
           HOURS: ${{ inputs.challenge_period_hours }}
           KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
+          NET: ${{ inputs.network }}
         run: |
           set -euo pipefail
           [[ -n "$KEY" ]] || { echo "secret QUIRE_CONTRACT_PRIVATE_KEY missing"; exit 1; }
@@ -87,9 +95,9 @@ jobs:
             echo "init args: $ARGS"
             near contract deploy "$CONTRACT" use-file "$WASM" with-init-call new json-args "$ARGS" \
               prepaid-gas '100 Tgas' attached-deposit '0 NEAR' \
-              network-config mainnet sign-with-plaintext-private-key "$KEY" send
+              network-config "$NET" sign-with-plaintext-private-key "$KEY" send
           else
             near contract deploy "$CONTRACT" use-file "$WASM" without-init-call \
-              network-config mainnet sign-with-plaintext-private-key "$KEY" send
+              network-config "$NET" sign-with-plaintext-private-key "$KEY" send
           fi
-          near contract call-function as-read-only "$CONTRACT" get_config json-args '{}' network-config mainnet now
+          near contract call-function as-read-only "$CONTRACT" get_config json-args '{}' network-config "$NET" now

@@ -19,8 +19,8 @@ const Env = z.object({
   /** Allows passwordless *.sim accounts. Never enable with ONCHAIN modes. */
   QUIRE_DEV_AUTH: bool,
 
-  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("mainnet"),
-  NEAR_RPC_URL: z.string().url().default("https://rpc.mainnet.fastnear.com"),
+  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("testnet"),
+  NEAR_RPC_URL: z.string().url().default("https://test.rpc.fastnear.com"),
   /** Markets are denominated in native NEAR (1 unit = 1 micro-NEAR). */
   QUIRE_COLLATERAL_SYMBOL: z.string().default("NEAR"),
   QUIRE_MARKET_CONTRACT: z.string().optional(),

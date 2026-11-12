@@ -19,7 +19,7 @@ export function SectionHeader({ title, action, id }: { title: string; action?: {
 export function PageTitle({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children?: ReactNode }) {
   return (
     <header className="pt-10 pb-6 md:pt-14">
-      <h1 className="text-large font-bold tracking-[-0.03em]">{title}</h1>
+      <h1 className="text-large font-semibold tracking-[-0.02em]">{title}</h1>
       {subtitle && <p className="mt-2 max-w-[60ch] text-body text-label-2">{subtitle}</p>}
       {children}
     </header>

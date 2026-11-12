@@ -18,9 +18,9 @@ export function SessionControl() {
   if (me) {
     return (
       <>
-        <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-full pr-1 pl-3 text-sub transition-colors hover:bg-fill">
+        <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-md pr-1 pl-3 text-sub transition-colors hover:bg-fill">
           <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
-          <span className="grid size-7 place-items-center rounded-full bg-tint text-footnote font-semibold text-white" aria-hidden>
+          <span className="grid size-7 place-items-center rounded-full bg-tint text-footnote font-semibold text-on-accent" aria-hidden>
             {me.session.accountId.slice(0, 1).toUpperCase()}
           </span>
           <span className="sr-only">Account {me.session.accountId}</span>
@@ -45,7 +45,7 @@ export function SessionControl() {
               signOut();
               setAccount(false);
             }}
-            className="mt-4 h-11 w-full rounded-full bg-fill text-sub font-semibold text-no transition-transform active:scale-[0.98]"
+            className="mt-4 h-11 w-full rounded-md bg-fill text-sub font-semibold text-no transition-transform active:scale-[0.98]"
           >
             Sign out
           </button>
@@ -56,7 +56,7 @@ export function SessionControl() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="h-8 rounded-full bg-tint px-4 text-footnote font-semibold text-white transition-[transform,background-color] duration-200 hover:bg-tint-press active:scale-95">
+      <button onClick={() => setOpen(true)} className="h-8 rounded-md bg-tint px-4 text-footnote font-semibold text-on-accent transition-[transform,background-color] duration-200 hover:bg-tint-press active:scale-95">
         Sign in
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Sign in">
@@ -80,7 +80,7 @@ export function SessionControl() {
           </p>
           <label className="mt-5 block">
             <span className="mb-1.5 block text-footnote text-label-2">Account name</span>
-            <span className="flex h-11 items-center rounded-[10px] bg-bg-2 px-3 ring-tint transition-shadow focus-within:ring-2">
+            <span className="flex h-11 items-center rounded-lg bg-bg-2 px-3 ring-tint transition-shadow focus-within:ring-2">
               <input
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}

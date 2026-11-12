@@ -25,7 +25,7 @@ Deadline: **NEAR Hackathon, 14 Nov 2026 23:59 UTC**. Submission = public repo + 
 - NEAR mainnet; markets priced and settled in **native NEAR** (no qUSD, no USDC).
 - `deposit()` auto-registers; storage drawn from balance; native-NEAR withdrawals with failure re-credit.
 - Safety caps (10 NEAR per account, 100 NEAR total by default), global pause, withdrawals always open.
-- Manual GitHub Action `deploy-mainnet`; guide in docs/DEPLOY_MAINNET.md. CI builds the wasm on every push.
+- Manual GitHub Action `deploy-contract`; guide in docs/DEPLOY.md. CI builds the wasm on every push.
 - Simulated mode (local dev and tests) labels its balances "test NEAR"; they have no value.
 
 ## ⚠️ Not yet verified in this workspace

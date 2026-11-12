@@ -23,11 +23,11 @@ export function Segmented<T extends string>({
   const i = Math.max(0, options.findIndex((o) => o.value === value));
   const h = size === "sm" ? "h-7 text-footnote" : "h-9 text-sub";
   return (
-    <div role="radiogroup" aria-label={label} className={`relative grid rounded-[9px] bg-fill p-0.5 ${h} ${disabled ? "opacity-50" : ""}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div role="radiogroup" aria-label={label} className={`relative grid rounded-lg border hairline bg-bg-2 p-[3px] ${h} ${disabled ? "opacity-50" : ""}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       <span
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 left-0.5 rounded-[7px] bg-elevated shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] transition-transform duration-300 ease-ios dark:bg-[#636366]"
-        style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(${i * 100}%)` }}
+        className="absolute top-[3px] bottom-[3px] left-[3px] rounded-md border hairline bg-elevated shadow-[0_1px_2px_rgba(14,16,21,0.08)] transition-transform duration-300 ease-ios"
+        style={{ width: `calc((100% - 6px) / ${options.length})`, transform: `translateX(${i * 100}%)` }}
       />
       {options.map((o) => (
         <button
@@ -46,7 +46,7 @@ export function Segmented<T extends string>({
   );
 }
 
-/** Bottom sheet on phones, centred dialog on larger screens. */
+/** Drawer: slides up from the bottom on phones, in from the right on larger screens. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
@@ -67,23 +67,23 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, onClose]);
   if (!mounted || !open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="presentation">
-      <div className="anim-fade absolute inset-0 bg-scrim backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-stretch sm:justify-end" role="presentation">
+      <div className="anim-fade absolute inset-0 bg-scrim" onClick={onClose} aria-hidden />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="anim-sheet relative w-full max-w-md rounded-t-[14px] bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-pop sm:rounded-[14px] sm:pb-5"
+        className="anim-sheet relative max-h-[92dvh] w-full overflow-y-auto rounded-t-xl bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-drawer sm:h-full sm:max-h-none sm:max-w-[420px] sm:rounded-none sm:pb-6"
       >
         <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-fill-2 sm:hidden" aria-hidden />
-        <div className="flex items-center justify-between px-5 pt-3 pb-1">
-          <h2 className="text-body font-semibold">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="grid size-7 place-items-center rounded-full bg-fill text-label-2 transition-colors hover:text-label">
+        <div className="flex items-center justify-between border-b hairline px-6 pt-3 pb-3 sm:pt-5 sm:pb-4">
+          <h2 className="text-title3 font-semibold">{title}</h2>
+          <button onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-md text-label-2 transition-colors hover:bg-fill hover:text-label">
             <X size={15} strokeWidth={2.5} />
           </button>
         </div>
-        <div className="px-5 pt-2">{children}</div>
+        <div className="px-6 pt-5">{children}</div>
       </div>
     </div>,
     document.body,
@@ -118,6 +118,6 @@ export function AnimatedNumber({ value, format }: { value: number; format: (n: n
 }
 
 export const buttonPrimary =
-  "inline-flex h-11 items-center justify-center rounded-full bg-tint px-5 text-sub font-semibold text-white transition-[transform,background-color,opacity] duration-200 ease-ios hover:bg-tint-press active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-11 items-center justify-center rounded-lg bg-tint px-5 text-sub font-semibold text-on-accent transition-[transform,background-color,opacity] duration-200 ease-ios hover:bg-tint-press active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";
 export const buttonSecondary =
-  "inline-flex h-11 items-center justify-center rounded-full bg-fill px-5 text-sub font-semibold text-tint transition-[transform,background-color] duration-200 ease-ios hover:bg-fill-2 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-11 items-center justify-center rounded-lg border hairline bg-elevated px-5 text-sub font-semibold text-label transition-[transform,background-color,border-color] duration-200 ease-ios hover:border-label-3 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";

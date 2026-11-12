@@ -45,7 +45,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           <ModeTag mode={m.executionMode} />
           {m.status !== "ACTIVE" && <span className="font-medium text-no">{m.status.toLowerCase().replace(/_/g, " ")}</span>}
         </p>
-        <h1 className="mt-2 max-w-[24ch] text-[2rem] leading-[1.12] font-bold tracking-[-0.03em] md:text-large">{claim.title}</h1>
+        <h1 className="mt-2 max-w-[24ch] text-[2rem] leading-[1.12] font-semibold tracking-[-0.02em] md:text-large">{claim.title}</h1>
         <p className="mt-3 text-sub text-label-2">
           About {claim.subject}. Open since {new Date(m.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}, with no closing date.
         </p>

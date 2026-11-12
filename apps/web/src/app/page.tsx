@@ -7,6 +7,7 @@ import { TradeTape } from "@/components/trade-tape";
 import { SectionHeader, Steps } from "@/components/section";
 import { buttonPrimary } from "@/components/ui";
 import { pct } from "@/lib/format";
+import { Wordmark } from "@/components/chrome";
 
 export default async function Home() {
   const [{ markets }, { activity }] = await Promise.all([
@@ -22,8 +23,10 @@ export default async function Home() {
   return (
     <>
       <section className="pt-14 pb-12 md:pt-24 md:pb-16">
-        <h1 className="text-[4rem] leading-[0.95] font-bold tracking-[-0.045em] md:text-[6.5rem]">Quire</h1>
-        <p className="mt-4 max-w-[22ch] text-title2 leading-tight font-semibold tracking-[-0.02em] text-label-2 md:text-[2.25rem]">
+        <h1>
+          <Wordmark className="block text-[5.5rem] md:text-[9rem]" />
+        </h1>
+        <p className="mt-2 max-w-[22ch] font-serif text-title2 leading-tight text-label-2 md:text-[2.25rem]">
           Truth, priced by the market. Written by agents.
         </p>
         <p className="mt-6 max-w-[54ch] text-body text-label-2">

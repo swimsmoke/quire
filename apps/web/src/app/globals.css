@@ -5,48 +5,52 @@
 
 :root {
   color-scheme: light;
-  --bg: #ffffff;
-  --bg-2: #f5f5f7; /* quiet secondary surface: inputs, sheets' inner wells */
-  --elevated: #ffffff; /* sheets / popovers */
-  --label: #1d1d1f;
-  --label-2: #6e6e73;
-  --label-3: #a1a1a6;
-  --separator: rgba(0, 0, 0, 0.1);
-  --fill: rgba(120, 120, 128, 0.12);
-  --fill-2: rgba(120, 120, 128, 0.2);
-  --tint: #0071e3;
-  --tint-press: #0062c4;
-  --yes: #1f8a3c;
-  --no: #d70015;
-  --sim: #b25000;
-  --scrim: rgba(0, 0, 0, 0.32);
-  --chrome: rgba(255, 255, 255, 0.72); /* frosted bars */
-  --shadow-sheet: 0 24px 64px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --bg: #f4f5f7;
+  --bg-2: #eaecf0; /* inputs and wells */
+  --elevated: #ffffff; /* drawers, popovers */
+  --label: #191b1f;
+  --label-2: #5c6170;
+  --label-3: #9aa0ac;
+  --separator: rgba(25, 27, 31, 0.1);
+  --fill: rgba(25, 27, 31, 0.05);
+  --fill-2: rgba(25, 27, 31, 0.09);
+  --tint: #3046c5; /* ink indigo */
+  --tint-press: #2536a3;
+  --on-accent: #ffffff;
+  --yes: #12805c; /* jade */
+  --no: #c24e1b; /* rust */
+  --sim: #9a6a00;
+  --scrim: rgba(14, 16, 21, 0.35);
+  --chrome: rgba(244, 245, 247, 0.85);
+  --shadow-sheet: -24px 0 64px -24px rgba(14, 16, 21, 0.28), 0 0 0 1px rgba(25, 27, 31, 0.06);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #000000;
-  --bg-2: #1c1c1e;
-  --elevated: #1c1c1e;
-  --label: #f5f5f7;
-  --label-2: #98989d;
-  --label-3: #636366;
-  --separator: rgba(255, 255, 255, 0.12);
-  --fill: rgba(120, 120, 128, 0.24);
-  --fill-2: rgba(120, 120, 128, 0.36);
-  --tint: #2997ff;
-  --tint-press: #4aa8ff;
-  --yes: #30d158;
-  --no: #ff453a;
-  --sim: #ff9f0a;
-  --scrim: rgba(0, 0, 0, 0.6);
-  --chrome: rgba(22, 22, 23, 0.72);
-  --shadow-sheet: 0 24px 64px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --bg: #0e1015;
+  --bg-2: #171a22;
+  --elevated: #1a1e28;
+  --label: #e8eaf0;
+  --label-2: #9aa1b2;
+  --label-3: #5e6475;
+  --separator: rgba(232, 234, 240, 0.1);
+  --fill: rgba(232, 234, 240, 0.06);
+  --fill-2: rgba(232, 234, 240, 0.1);
+  --tint: #8a98ff;
+  --tint-press: #a3aeff;
+  --on-accent: #0e1015;
+  --yes: #3cc48f;
+  --no: #ff8a57;
+  --sim: #e0b341;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --chrome: rgba(14, 16, 21, 0.82);
+  --shadow-sheet: -24px 0 64px -24px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(232, 234, 240, 0.08);
 }
 
 @theme inline {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter Variable", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-script: "Grand Hotel", cursive;
 
   --color-bg: var(--bg);
   --color-bg-2: var(--bg-2);
@@ -64,6 +68,7 @@
   --color-sim: var(--sim);
   --color-scrim: var(--scrim);
   --color-chrome: var(--chrome);
+  --color-on-accent: var(--on-accent);
 
   /* iOS-like type scale */
   --text-caption: 0.75rem;
@@ -72,7 +77,7 @@
   --text-footnote--line-height: 1.125rem;
   --text-sub: 0.9375rem;
   --text-sub--line-height: 1.375rem;
-  --text-body: 1.0625rem;
+  --text-body: 1rem;
   --text-body--line-height: 1.6rem;
   --text-title3: 1.25rem;
   --text-title3--line-height: 1.6rem;
@@ -81,7 +86,7 @@
   --text-large: 2.5rem;
   --text-large--line-height: 2.875rem;
 
-  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ios: cubic-bezier(0.22, 0.8, 0.2, 1); /* soft deceleration */
 }
 
 @layer base {
@@ -105,7 +110,6 @@
     min-height: 100dvh;
     font-size: var(--text-body);
     line-height: 1.55;
-    letter-spacing: -0.011em;
   }
   /* smooth theme switch, without animating layout */
   html.theme-transition,
@@ -139,6 +143,14 @@
   }
   to {
     transform: translateY(0);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 @keyframes pop-in {
@@ -178,6 +190,9 @@
 
 @utility anim-sheet {
   animation: sheet-up 0.45s var(--ease-ios) both;
+}
+@utility anim-drawer {
+  animation: drawer-in 0.45s var(--ease-ios) both;
 }
 @utility anim-pop {
   animation: pop-in 0.35s var(--ease-ios) both;

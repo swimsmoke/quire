@@ -137,14 +137,14 @@ export function TradeTicket({ market }: { market: Market }) {
   const outcomeButton = (o: Outcome) => {
     const on = outcome === o;
     const ppm = o === "YES" ? market.probabilityYesPpm : market.probabilityNoPpm;
-    const tone = o === "YES" ? (on ? "bg-yes text-white" : "bg-fill text-yes") : on ? "bg-no text-white" : "bg-fill text-no";
+    const tone = o === "YES" ? (on ? "bg-yes text-on-accent" : "bg-fill text-yes") : on ? "bg-no text-on-accent" : "bg-fill text-no";
     return (
       <button
         key={o}
         type="button"
         aria-pressed={on}
         onClick={() => setOutcome(o)}
-        className={`flex h-14 flex-1 items-center justify-between rounded-[12px] px-4 transition-[background-color,color,transform] duration-300 ease-ios active:scale-[0.98] ${tone}`}
+        className={`flex h-14 flex-1 items-center justify-between rounded-lg px-4 transition-[background-color,color,transform] duration-300 ease-ios active:scale-[0.98] ${tone}`}
       >
         <span className="text-body font-semibold">{o === "YES" ? "Yes" : "No"}</span>
         <span className="tabular text-sub font-medium opacity-90">{price(ppm)}</span>
@@ -184,7 +184,7 @@ export function TradeTicket({ market }: { market: Market }) {
           </div>
           <div className="mt-3 flex gap-2">
             {(side === "BUY" ? ["10", "50", "100"] : []).map((d) => (
-              <button key={d} type="button" onClick={() => addAmount(d)} className="h-8 rounded-full bg-fill px-3 text-footnote font-medium transition-[background-color,transform] duration-200 hover:bg-fill-2 active:scale-95">
+              <button key={d} type="button" onClick={() => addAmount(d)} className="h-8 rounded-md bg-fill px-3 text-footnote font-medium transition-[background-color,transform] duration-200 hover:bg-fill-2 active:scale-95">
                 +{d}
               </button>
             ))}
@@ -192,7 +192,7 @@ export function TradeTicket({ market }: { market: Market }) {
               <button
                 type="button"
                 onClick={() => setAmount(formatUnits(BigInt(side === "BUY" ? balance : held)))}
-                className="h-8 rounded-full bg-fill px-3 text-footnote font-medium text-tint transition-[background-color,transform] duration-200 hover:bg-fill-2 active:scale-95"
+                className="h-8 rounded-md bg-fill px-3 text-footnote font-medium text-tint transition-[background-color,transform] duration-200 hover:bg-fill-2 active:scale-95"
               >
                 Max
               </button>

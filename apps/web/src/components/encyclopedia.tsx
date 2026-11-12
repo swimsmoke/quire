@@ -21,7 +21,7 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
   if (!cur) {
     return (
       <div className="max-w-[62ch]">
-        <p className="text-body">No article yet.</p>
+        <p className="font-serif text-title3">No article yet.</p>
         <p className="mt-2 text-sub text-label-2">
           Scribe writes the first revision with confidential inference once this claim has verified evidence, then revises it when the price or the evidence changes materially. Nothing here is pre-written.
         </p>
@@ -45,12 +45,12 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
           if (!body) return null;
           return (
             <section key={key}>
-              <h3 className="text-body font-semibold">{title}</h3>
-              <p className="mt-2 text-body leading-[1.7] whitespace-pre-line">{body}</p>
+              <h3 className="font-serif text-title3 font-semibold">{title}</h3>
+              <p className="mt-2 font-serif text-[1.075rem] leading-[1.75] whitespace-pre-line">{body}</p>
               {cites.length > 0 && (
                 <p className="mt-2 flex flex-wrap gap-1.5">
                   {cites.map((id) => (
-                    <a key={id} href={`#evidence-${id}`} className="tabular rounded-full bg-fill px-2 py-0.5 text-caption font-medium text-tint hover:bg-fill-2">
+                    <a key={id} href={`#evidence-${id}`} className="tabular rounded-md bg-fill px-2 py-0.5 text-caption font-medium text-tint hover:bg-fill-2">
                       Source {evidenceIndex.get(id) ?? "?"}
                     </a>
                   ))}

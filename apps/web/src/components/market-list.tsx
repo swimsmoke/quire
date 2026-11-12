@@ -7,9 +7,9 @@ import { ModeTag } from "./mode";
 
 /** 24h change as a Stocks-style pill. */
 export function ChangePill({ ppm }: { ppm: number }) {
-  const tone = ppm > 0 ? "bg-yes text-white" : ppm < 0 ? "bg-no text-white" : "bg-fill text-label-2";
+  const tone = ppm > 0 ? "bg-yes text-on-accent" : ppm < 0 ? "bg-no text-on-accent" : "bg-fill text-label-2";
   return (
-    <span className={`tabular inline-flex h-7 min-w-[4.5rem] items-center justify-end rounded-[7px] px-2 text-footnote font-semibold ${tone}`}>
+    <span className={`tabular inline-flex h-7 min-w-[4.5rem] items-center justify-end rounded-md px-2 text-footnote font-semibold ${tone}`}>
       {ppm === 0 ? "0.0" : `${ppm > 0 ? "+" : "−"}${(Math.abs(ppm) / 10_000).toFixed(1)}`}
     </span>
   );
@@ -22,7 +22,7 @@ export function MarketList({ markets, compact = false }: { markets: Market[]; co
     <ul className="divide-y hairline border-y hairline">
       {markets.map((m) => (
         <li key={m.id}>
-          <Link href={`/markets/${m.slug}`} className="group flex items-center gap-4 py-4 transition-colors duration-200 hover:bg-fill/40 sm:-mx-3 sm:rounded-[10px] sm:px-3">
+          <Link href={`/markets/${m.slug}`} className="group flex items-center gap-4 py-4 transition-colors duration-200 hover:bg-fill/40 sm:-mx-3 sm:rounded-lg sm:px-3">
             <span className="min-w-0 flex-1">
               <span className="block text-body leading-snug font-medium">{m.question}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-footnote text-label-2">

@@ -8,7 +8,7 @@ import { Sheet } from "./ui";
 export function ModeTag({ mode }: { mode: ExecutionMode | "CONFIDENTIAL_TEE" }) {
   const label = { SIMULATED: "Simulated", ONCHAIN_TESTNET: "NEAR testnet", ONCHAIN_MAINNET: "NEAR mainnet", CONFIDENTIAL_TEE: "TEE inference" }[mode];
   const tone = mode === "SIMULATED" ? "text-sim bg-sim/12" : "text-tint bg-tint/12";
-  return <span className={`inline-flex h-5 items-center rounded-full px-2 text-caption font-medium ${tone}`}>{label}</span>;
+  return <span className={`inline-flex h-5 items-center rounded-md px-2 text-caption font-medium ${tone}`}>{label}</span>;
 }
 
 /** Nav-bar badge explaining simulated mode. */
@@ -16,7 +16,7 @@ export function SimulatedBadge() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)} className="inline-flex h-6 items-center gap-1.5 rounded-full bg-sim/12 px-2.5 text-footnote font-medium text-sim transition-transform active:scale-95">
+      <button onClick={() => setOpen(true)} className="inline-flex h-6 items-center gap-1.5 rounded-md bg-sim/12 px-2.5 text-footnote font-medium text-sim transition-transform active:scale-95">
         <span className="size-1.5 rounded-full bg-sim" aria-hidden />
         Simulated
       </button>

@@ -53,7 +53,7 @@ export function ThemeToggle() {
         apply(next, true);
         setPref(next);
       }}
-      className="grid size-9 place-items-center rounded-full text-label-2 transition-[background-color,color,transform] duration-200 ease-ios hover:bg-fill hover:text-label active:scale-90"
+      className="grid size-9 place-items-center rounded-md text-label-2 transition-[background-color,color,transform] duration-200 ease-ios hover:bg-fill hover:text-label active:scale-90"
     >
       <Icon size={18} strokeWidth={1.75} />
     </button>
