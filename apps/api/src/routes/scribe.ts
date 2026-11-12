@@ -79,6 +79,8 @@ export async function scribeRoutes(app: FastifyInstance) {
     const row = await marketBySlug(app, slug);
     if (!row) return reply.code(404).send({ error: "MARKET_NOT_FOUND" });
     const { markets: m, claims: c } = row;
+    let stage = "reading market state";
+    try {
 
     await app.db.insert(encyclopediaPages).values({ claimId: c.id }).onConflictDoNothing();
     const [page] = await app.db.select().from(encyclopediaPages).where(eq(encyclopediaPages.claimId, c.id));
@@ -90,6 +92,7 @@ export async function scribeRoutes(app: FastifyInstance) {
       .orderBy(asc(evidence.createdAt))
       .limit(12);
 
+      stage = "checking the update policy";
     // ---- update policy ----
     let trigger: string;
     if (!prev) trigger = "First revision";
@@ -110,6 +113,7 @@ export async function scribeRoutes(app: FastifyInstance) {
       }
     }
 
+      stage = "building the input";
     // ---- structured input from live state ----
     const snaps = await app.db.select({ t: marketSnapshots.takenAt, p: marketSnapshots.priceYesPpm }).from(marketSnapshots).where(eq(marketSnapshots.marketId, m.id)).orderBy(asc(marketSnapshots.takenAt)).limit(2000);
     const step = Math.max(1, Math.ceil(snaps.length / 24));
@@ -143,6 +147,7 @@ export async function scribeRoutes(app: FastifyInstance) {
       now: new Date().toISOString(),
     };
 
+      stage = "calling NEAR AI Cloud";
     // ---- confidential inference + validation (one retry on malformed output) ----
     const cfg = { baseUrl: app.cfg.NEAR_AI_BASE_URL, apiKey: app.cfg.NEAR_AI_API_KEY ?? "", model: app.cfg.NEAR_AI_MODEL, fetchFn: app.aiFetch };
     const messages = [
@@ -165,11 +170,12 @@ export async function scribeRoutes(app: FastifyInstance) {
         parsed = parseArticle(inf.content, new Set(keyOf.keys()));
       } catch (e) {
         lastError = (e as Error).message.slice(0, 300);
-        await app.db.insert(aiInferences).values({ purpose: "ARTICLE", mode: "CONFIDENTIAL_TEE", provider: "near-ai-cloud", model: inf.model, chatId: inf.chatId, requestHash: inf.requestHash, responseHash: inf.responseHash, responseText: inf.content.slice(0, 8000), status: "INVALID_OUTPUT", error: lastError });
+        await app.db.insert(aiInferences).values({ purpose: "ARTICLE", mode: "CONFIDENTIAL_TEE", provider: "near-ai-cloud", model: inf.model, chatId: inf.chatId, requestHash: inf.requestHash, responseHash: inf.responseHash, responseText: inf.content.replace(/\u0000/g, "").slice(0, 8000), status: "INVALID_OUTPUT", error: lastError });
       }
     }
     if (!parsed || !inf) return reply.code(502).send({ error: "INVALID_OUTPUT", message: `The model did not return a valid article twice in a row. ${lastError}` });
 
+      stage = "saving the revision";
     // citations: model keys (E1..) -> evidence ids
     const content = Object.fromEntries(Object.entries(parsed.article).map(([k, s]) => [k, { body: s.body, citations: s.citations.map((key) => keyOf.get(key)!.id) }]));
 
@@ -184,7 +190,7 @@ export async function scribeRoutes(app: FastifyInstance) {
           chatId: inf.chatId,
           requestHash: inf.requestHash,
           responseHash: inf.responseHash,
-          responseText: inf.content.slice(0, 8000),
+          responseText: inf.content.replace(/\u0000/g, "").slice(0, 8000),
           status: "OK",
           error: inf.verificationNote,
           latencyMs: inf.latencyMs,
@@ -214,5 +220,11 @@ export async function scribeRoutes(app: FastifyInstance) {
       return rev!;
     });
     return reply.code(201).send({ revisionNumber: result.revisionNumber, trigger, model: inf.model, signatureVerified: inf.signatureVerified, attestationBindsSigner: inf.attestationBindsSigner, droppedCitations: parsed.droppedCitations, note: inf.verificationNote });
+    } catch (e) {
+      // Report where it failed instead of a bare "internal error". No secrets are in these messages.
+      const err = e as Error & { cause?: { message?: string; code?: string } };
+      req.log.error({ err, stage }, "encyclopedia generation failed");
+      return reply.code(500).send({ error: "GENERATION_FAILED", message: `Failed while ${stage}: ${err.message?.slice(0, 300) ?? "unknown error"}${err.cause ? ` (cause: ${(err.cause.code ?? err.cause.message ?? "").toString().slice(0, 200)})` : ""}` });
+    }
   });
 }

@@ -54,7 +54,7 @@ const PREFERRED = ["deepseek", "qwen", "glm", "llama"];
 
 async function pickModel(cfg: NearAiConfig, f: typeof fetch): Promise<string> {
   try {
-    const r = await f(`${cfg.baseUrl}/models`, { headers: { authorization: `Bearer ${cfg.apiKey}` } });
+    const r = await f(`${cfg.baseUrl}/models`, { headers: { authorization: `Bearer ${cfg.apiKey}` }, signal: AbortSignal.timeout(15_000) });
     if (!r.ok) return cfg.model;
     const ids: string[] = ((await r.json()) as { data?: { id: string }[] }).data?.map((m) => m.id) ?? [];
     if (!ids.length || ids.includes(cfg.model)) return cfg.model;
@@ -74,8 +74,15 @@ export async function confidentialChat(cfg: NearAiConfig, messages: { role: "sys
   const model = await pickModel(cfg, f);
   const body = JSON.stringify({ model, messages, temperature: 0.2, max_tokens: 2400 });
   const started = Date.now();
-  const res = await f(`${cfg.baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${cfg.apiKey}` }, body });
-  const raw = await res.text();
+  let res: Response;
+  let raw: string;
+  try {
+    res = await f(`${cfg.baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${cfg.apiKey}` }, body, signal: AbortSignal.timeout(120_000) });
+    raw = await res.text();
+  } catch (e) {
+    const cause = (e as { cause?: { code?: string; message?: string } }).cause;
+    throw new NearAiError("HTTP_ERROR", `Could not complete the request to NEAR AI Cloud (model ${model}): ${(e as Error).message}${cause ? ` [${cause.code ?? cause.message ?? ""}]` : ""}`);
+  }
   if (!res.ok) throw new NearAiError("HTTP_ERROR", `NEAR AI Cloud returned ${res.status}: ${raw.slice(0, 300)}`);
   let json: { id?: string; choices?: { message?: { content?: string } }[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
   try {
@@ -109,7 +116,7 @@ export async function confidentialChat(cfg: NearAiConfig, messages: { role: "sys
   // --- signature over (request hash, response hash) ---
   if (out.chatId) {
     try {
-      const s = await f(`${cfg.baseUrl}/signature/${encodeURIComponent(out.chatId)}?model=${encodeURIComponent(model)}&signing_algo=ecdsa`, { headers: { authorization: `Bearer ${cfg.apiKey}` } });
+      const s = await f(`${cfg.baseUrl}/signature/${encodeURIComponent(out.chatId)}?model=${encodeURIComponent(model)}&signing_algo=ecdsa`, { headers: { authorization: `Bearer ${cfg.apiKey}` }, signal: AbortSignal.timeout(30_000) });
       if (s.ok) {
         const sig = (await s.json()) as { text?: string; signature?: string; signing_address?: string; signing_algo?: string };
         out.signatureText = sig.text ?? null;
@@ -140,7 +147,7 @@ export async function confidentialChat(cfg: NearAiConfig, messages: { role: "sys
   if (out.signingAddress) {
     try {
       const nonce = randomBytes(32).toString("hex");
-      const a = await f(`${cfg.baseUrl}/attestation/report?model=${encodeURIComponent(model)}&nonce=${nonce}&signing_algo=ecdsa`, { headers: { authorization: `Bearer ${cfg.apiKey}` } });
+      const a = await f(`${cfg.baseUrl}/attestation/report?model=${encodeURIComponent(model)}&nonce=${nonce}&signing_algo=ecdsa`, { headers: { authorization: `Bearer ${cfg.apiKey}` }, signal: AbortSignal.timeout(30_000) });
       if (a.ok) {
         const text = await a.text();
         out.attestationNonce = nonce;
