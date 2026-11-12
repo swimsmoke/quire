@@ -1,8 +1,10 @@
 name: deploy-contract
 
 # Manual only: Actions tab -> deploy-contract -> Run workflow.
-# Needs a GitHub environment named after the network ("testnet" or "mainnet") with secret
-# QUIRE_CONTRACT_PRIVATE_KEY (full-access key of the CONTRACT account, format ed25519:...).
+# Needs a GitHub environment named after the network ("testnet" or "mainnet").
+# testnet: secret QUIRE_DEPLOY_SEED = any passphrase of 16+ characters; the workflow derives
+#          the contract key from it and creates the contract account through the faucet.
+# mainnet: secret QUIRE_CONTRACT_PRIVATE_KEY (full-access key of the CONTRACT account, ed25519:...).
 # See docs/DEPLOY.md.
 on:
   workflow_dispatch:
@@ -69,7 +71,6 @@ jobs:
           re='^(([a-z0-9]+[-_])*[a-z0-9]+\.)*([a-z0-9]+[-_])*[a-z0-9]+$'
           [[ "$CONTRACT" =~ $re && "$OWNER" =~ $re ]] || { echo "invalid account id"; exit 1; }
           [[ "$CONTRACT" != "$OWNER" ]] || { echo "use a separate contract account"; exit 1; }
-          near account view-account-summary "$CONTRACT" network-config "$NET" now
           near account view-account-summary "$OWNER" network-config "$NET" now
 
       - name: Deploy
@@ -81,10 +82,26 @@ jobs:
           TVL_CAP: ${{ inputs.tvl_cap_near }}
           HOURS: ${{ inputs.challenge_period_hours }}
           KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
+          QUIRE_DEPLOY_SEED: ${{ secrets.QUIRE_DEPLOY_SEED }}
           NET: ${{ inputs.network }}
         run: |
           set -euo pipefail
-          [[ -n "$KEY" ]] || { echo "secret QUIRE_CONTRACT_PRIVATE_KEY missing"; exit 1; }
+          # Testnet shortcut: no wallet export needed. The key is derived from the
+          # QUIRE_DEPLOY_SEED passphrase and the contract account is created by the faucet.
+          if [[ -z "$KEY" && "$NET" == "testnet" && -n "$QUIRE_DEPLOY_SEED" ]]; then
+            pip install -q cryptography
+            mapfile -t K < <(python3 scripts/derive_key.py "$CONTRACT")
+            PUB="${K[0]}"; KEY="${K[1]}"
+            echo "::add-mask::$KEY"
+            if ! near account view-account-summary "$CONTRACT" network-config testnet now >/dev/null 2>&1; then
+              echo "creating $CONTRACT via the testnet faucet"
+              near account create-account sponsor-by-faucet-service "$CONTRACT" \
+                use-manually-provided-public-key "$PUB" network-config testnet create
+              sleep 5
+            fi
+          fi
+          [[ -n "$KEY" ]] || { echo "set secret QUIRE_DEPLOY_SEED (testnet) or QUIRE_CONTRACT_PRIVATE_KEY"; exit 1; }
+          near account view-account-summary "$CONTRACT" network-config "$NET" now
           # contract units are micro-NEAR (10^-6 NEAR)
           to_units() { python3 -c "from decimal import Decimal as D; import sys; v=D(sys.argv[1]); assert v>0; print(int(v*10**6))" "$1"; }
           WASM=contracts/res/quire-market.wasm

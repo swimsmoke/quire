@@ -15,19 +15,22 @@ For the hackathon Quire runs on **NEAR testnet** (free test NEAR from the faucet
 About 9 NEAR in total. Market liquidity is not lost: after the hackathon the owner can resolve each
 market as invalid and redeem the pool, which returns the liquidity minus any trading losses.
 
-## Steps
+## Steps (testnet)
 
-1. **Create the accounts** at testnet.mynearwallet.com (names end in `.testnet`) and fund each
-   with free test NEAR from near-faucet.io.
-2. **Export the contract account's private key** from its wallet (it starts with `ed25519:`).
-   Never paste it into chat, an issue, or a commit.
-3. **Store it in GitHub**: repo Settings -> Environments -> New environment `testnet`
-   -> Add environment secret `QUIRE_CONTRACT_PRIVATE_KEY` = the key.
-   Optionally add yourself as a required reviewer so every deploy needs your click.
-4. **Deploy**: Actions -> `deploy-contract` -> Run workflow. Pick `testnet`, enter the contract account and
-   your main account, keep the default caps (10 NEAR per account, 100 NEAR in total).
-   The job runs all contract tests, builds the wasm, deploys, initialises, and prints `get_config`.
-5. **Upgrades** later: run the same workflow with *First deploy* unticked.
+1. **Create your own accounts in Meteor Wallet** (wallet.meteorwallet.app or the browser extension),
+   switched to **Testnet**: one owner account and two demo accounts. MyNearWallet no longer creates accounts.
+   Top them up with free test NEAR at near-faucet.io if needed.
+2. **Add one secret in GitHub**: repo Settings -> Environments -> New environment `testnet`
+   -> Add environment secret `QUIRE_DEPLOY_SEED` = any passphrase of 16 or more characters that you make up.
+3. **Deploy**: Actions -> `deploy-contract` -> Run workflow. Pick `testnet`, choose a new name for the
+   contract account (for example `quire-markets.testnet`) and enter your owner account.
+   The job runs the contract tests, builds the wasm, creates the contract account through the
+   testnet faucet with a key derived from your passphrase, deploys, initialises, and prints `get_config`.
+4. **Upgrades** later: run the same workflow with *First deploy* unticked.
+
+You never export a private key. Anyone who knows the passphrase controls the contract account,
+which is acceptable on testnet only. On mainnet, create the contract account yourself and store
+its key as `QUIRE_CONTRACT_PRIVATE_KEY` instead.
 
 ## How deposits work
 
