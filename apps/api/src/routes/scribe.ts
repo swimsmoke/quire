@@ -7,6 +7,7 @@ import { agentActivities, agents, aiInferences, articleRevisions, claims, encycl
 import { checkEvidence } from "../ai/evidence-check.js";
 import { confidentialChat, NearAiError } from "../ai/nearai.js";
 import { parseArticle, SYSTEM_PROMPT } from "../ai/article.js";
+import { pgErrorCode } from "../market/engine.js";
 
 async function marketBySlug(app: FastifyInstance, slug: string) {
   const [row] = await app.db.select().from(markets).innerJoin(claims, eq(markets.claimId, claims.id)).where(eq(markets.slug, slug));
@@ -14,6 +15,9 @@ async function marketBySlug(app: FastifyInstance, slug: string) {
 }
 const agentId = async (app: FastifyInstance, slug: string) => (await app.db.select({ id: agents.id }).from(agents).where(eq(agents.slug, slug)))[0]?.id ?? null;
 const pctText = (ppm: number) => `${(ppm / 10_000).toFixed(1)}%`;
+
+/** Claims with a revision being written right now (one writer per claim at a time). */
+const writing = new Set<string>();
 
 export async function scribeRoutes(app: FastifyInstance) {
   /**
@@ -79,6 +83,8 @@ export async function scribeRoutes(app: FastifyInstance) {
     const row = await marketBySlug(app, slug);
     if (!row) return reply.code(404).send({ error: "MARKET_NOT_FOUND" });
     const { markets: m, claims: c } = row;
+    if (writing.has(c.id)) return reply.code(409).send({ error: "IN_PROGRESS", message: "Scribe is already writing a revision for this claim. It will appear in a moment." });
+    writing.add(c.id);
     let stage = "reading market state";
     try {
 
@@ -221,10 +227,14 @@ export async function scribeRoutes(app: FastifyInstance) {
     });
     return reply.code(201).send({ revisionNumber: result.revisionNumber, trigger, model: inf.model, signatureVerified: inf.signatureVerified, attestationBindsSigner: inf.attestationBindsSigner, droppedCitations: parsed.droppedCitations, note: inf.verificationNote });
     } catch (e) {
+      // Another server instance saved the same revision number first: the article exists, so this is not a failure.
+      if (pgErrorCode(e) === "23505") return reply.code(409).send({ error: "IN_PROGRESS", message: "A revision was just written for this claim. Refresh the page to read it." });
       // Report where it failed instead of a bare "internal error". No secrets are in these messages.
       const err = e as Error & { cause?: { message?: string; code?: string } };
       req.log.error({ err, stage }, "encyclopedia generation failed");
       return reply.code(500).send({ error: "GENERATION_FAILED", message: `Failed while ${stage}: ${err.message?.slice(0, 300) ?? "unknown error"}${err.cause ? ` (cause: ${(err.cause.code ?? err.cause.message ?? "").toString().slice(0, 200)})` : ""}` });
+    } finally {
+      writing.delete(c.id);
     }
   });
 }

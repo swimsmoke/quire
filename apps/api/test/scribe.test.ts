@@ -141,9 +141,16 @@ describe("encyclopedia generation (Scribe)", () => {
     mode = "good";
   });
 
+  it("two simultaneous requests write one revision, not two", async () => {
+    const [a, b] = await Promise.all([post(`/markets/open-model-arc-agi-2-85/encyclopedia/generate`), post(`/markets/open-model-arc-agi-2-85/encyclopedia/generate`)]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409]);
+    const e = (await app.inject({ method: "GET", url: `/markets/open-model-arc-agi-2-85/encyclopedia` })).json();
+    expect(e.revisions).toHaveLength(1);
+  });
+
   it("logs real agent activity", async () => {
     const agents = (await app.inject({ method: "GET", url: "/agents" })).json().agents;
-    expect(agents.find((a: { slug: string }) => a.slug === "scribe").stats.activityCount).toBe(3);
+    expect(agents.find((a: { slug: string }) => a.slug === "scribe").stats.activityCount).toBe(4);
     expect(agents.find((a: { slug: string }) => a.slug === "scout").stats.activityCount).toBe(3);
   });
 });

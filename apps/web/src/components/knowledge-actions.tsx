@@ -27,7 +27,10 @@ export function GenerateArticle({ slug, hasArticle }: { slug: string; hasArticle
             });
             router.refresh();
           } catch (e) {
-            setMsg({ ok: false, text: e instanceof ApiError ? e.message : "Couldn't reach Quire. Try again." });
+            if (e instanceof ApiError && e.code === "IN_PROGRESS") {
+              setMsg({ ok: true, text: e.message });
+              setTimeout(() => router.refresh(), 4000);
+            } else setMsg({ ok: false, text: e instanceof ApiError ? e.message : "Couldn't reach Quire. Try again." });
           } finally {
             setBusy(false);
           }
