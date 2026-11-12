@@ -1,0 +1,15 @@
+# Local Postgres for development and tests:  docker compose up -d
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: quire
+      POSTGRES_PASSWORD: quire
+      POSTGRES_DB: quire
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quire"]
+      interval: 3s
+      timeout: 3s
+      retries: 20

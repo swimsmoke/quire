@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import pg from "pg";
 import { createDb, type DB } from "../src/db/client.js";
 import { accountBalances } from "../src/db/schema.js";
 import { runMigrations } from "../src/db/migrate.js";
@@ -8,7 +9,26 @@ import { config } from "../src/config.js";
 
 export const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? "postgresql://quire:quire@localhost:5432/quire_test";
 
+/** Create the test database if it does not exist, so `pnpm test` works on a fresh Postgres. */
+async function ensureTestDb() {
+  const u = new URL(TEST_DB_URL);
+  const name = u.pathname.slice(1);
+  u.pathname = "/postgres";
+  const admin = new pg.Client({ connectionString: u.toString() });
+  try {
+    await admin.connect();
+    await admin.query(`create database "${name.replace(/"/g, "")}"`);
+  } catch (e) {
+    if ((e as { code?: string }).code !== "42P04") {
+      /* already exists (42P04) is fine; anything else surfaces when the tests connect */
+    }
+  } finally {
+    await admin.end().catch(() => undefined);
+  }
+}
+
 export async function setupTestApp() {
+  await ensureTestDb();
   await runMigrations(TEST_DB_URL);
   const { db, pool } = createDb(TEST_DB_URL);
   await db.execute(sql`truncate table

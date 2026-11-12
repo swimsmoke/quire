@@ -41,7 +41,7 @@ export function MarketList({ markets, compact = false }: { markets: Market[]; co
                     </span>
                   </span>
                 )}
-                {m.executionMode === "SIMULATED" && !compact && <ModeTag mode="SIMULATED" />}
+                {!compact && <ModeTag mode={m.executionMode} />}
                 {m.status !== "ACTIVE" && <span className="text-no">{m.status.toLowerCase().replace(/_/g, " ")}</span>}
               </span>
             </span>

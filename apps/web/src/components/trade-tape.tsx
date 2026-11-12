@@ -29,7 +29,7 @@ export function TradeTape({ trades, showMarket = false, empty = "No trades yet."
                 {pct(t.priceBeforePpm)} to {pct(t.priceAfterPpm)}
               </span>
               <span>{ago(t.createdAt)}</span>
-              {t.executionMode === "SIMULATED" && <ModeTag mode="SIMULATED" />}
+              <ModeTag mode={t.executionMode} />
             </p>
           </div>
         </li>

@@ -1,6 +1,6 @@
 # Quire — Architecture & Technical Decisions
 
-_Verified against official docs on 2026-11-06._
+_Last updated 2026-11-12. Describes what is built; planned parts are marked as planned._
 
 ## 1. Market maker: FPMM (chosen) vs LMSR vs others
 
@@ -30,40 +30,52 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 - *Liquidity* — collateral backing (`sets`).
 - *Volume* — gross collateral traded.
 
-**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. A resolver proposes, a challenge window must elapse, then anyone finalizes. INVALID pays 0.5 per share (solvent because every pair is backed by 1).
+**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. A resolver proposes, a challenge window must elapse, then anyone finalizes. INVALID pays 0.5 per share (solv## 2. NEAR components in use
 
-## 2. NEAR components and their separate responsibilities
-
-| Component | What it is (verified) | Role in Quire |
+| Component | Role in Quire | Status |
 |---|---|---|
-| **Quire market contract** (`quire-market`) | Rust / near-sdk 5.30, NEAR mainnet | Source of truth for balances (native NEAR, held as micro-NEAR units), positions, pools, agent limits. Emits NEP-297 `EVENT_JSON` logs. |
-| **NEAR Intents — 1Click API** | `https://1click.chaindefuser.com/v0/{tokens,quote,deposit/submit,status}`; statuses `PENDING_DEPOSIT, KNOWN_DEPOSIT_TX, PROCESSING, SUCCESS, INCOMPLETE_DEPOSIT, REFUNDED, FAILED`. **No testnet deployment exists.** JWT optional (else 0.2% fee). | Cross-chain funding: user deposits a supported asset on its origin chain, solvers swap it, and NEAR arrives in the user's own NEAR wallet, ready to deposit into Quire. |
-| **Chain Signatures** | MPC signer `v1.signer-prod.testnet` / `v1.signer`; derives foreign-chain addresses from `(NEAR account, path)` and signs payloads. | Lets a NEAR account control an address on another chain. Used to sign origin-chain deposit transactions (e.g. EVM USDC → the 1Click deposit address) from a NEAR-derived address. |
-| **NEAR AI Cloud** | OpenAI-compatible `https://cloud-api.near.ai/v1`, `sk-` API keys; TEE (Intel TDX + NVIDIA CC). `GET /v1/signature/{chat_id}` returns `{text, signature, signing_address, signing_algo}` where text = `model:sha256(req):sha256(resp)`; `GET /v1/attestation/report?model=…&nonce=…`. | Confidential generation of encyclopedia pages and agent analysis; Quire stores hashes, the signature, and verifies the recovered signer. |
+| **Quire market contract** (`contracts/quire-market`, Rust, near-sdk 5) | Source of truth for balances (native NEAR, held as micro-NEAR units), positions, pools, safety caps and agent limits. Emits NEP-297 `EVENT_JSON` logs. Deployed at `hardsealowner.testnet`. | Live on testnet |
+| **NEAR wallets via NEAR Connect** (`@hot-labs/near-connect`) | Users sign deposits, trades and withdrawals in their own wallet (Meteor and others). | Live |
+| **NEAR RPC** | The API fetches each submitted transaction hash, checks it succeeded against the contract, and mirrors the events. The web app reads balances with view calls. | Live |
+| **NEAR AI Cloud** (OpenAI-compatible API, models inside TEEs) | Generates encyclopedia revisions. Quire stores sha256 of the exact request and response, fetches the enclave signature for the chat id, checks the signed text contains both hashes and that the signature recovers to the signing address, and checks that address appears in the attestation report. | Live |
+| **NEAR Intents (1Click API)** | Planned: swap an asset from another chain into NEAR in the user's wallet. Mainnet only; there is no testnet deployment. | Not built |
+| **Chain Signatures** | Planned: sign the origin-chain deposit for an Intents swap from a NEAR account. | Not built |
 
-Intents ≠ Chain Signatures: Intents is a **solver/settlement network** (who executes the swap); Chain Signatures is a **key-management primitive** (who can sign on a foreign chain). Quire uses Chain Signatures to *originate* a deposit and Intents to *route* it.
+## 3. Collateral: native NEAR
 
-## 3. Collateral: native NEAR (decided 7 Nov 2026)
-
-Everything runs on NEAR mainnet and markets are denominated in **native NEAR**: no custom token,
-no stablecoin, no bridge. A share pays 1 NEAR on resolution. Amounts are kept in micro-NEAR units
-inside the contract, so the integer FPMM math and its TypeScript/Rust parity tests are unchanged.
+Markets are denominated in **native NEAR**: no custom token, no stablecoin, no bridge. A share pays 1 NEAR on resolution.
+Amounts are kept in micro-NEAR units inside the contract, so the integer FPMM math and its TypeScript/Rust parity tests are exact.
 
 - Deposit: payable `deposit()`; the first deposit registers the account and pays its storage.
 - Storage for new records is drawn from the account's own balance, so trades never fail for a missing storage deposit.
 - Withdraw: native transfer with a callback that re-credits the balance if the transfer fails.
 - Safety: per-account and total caps, global pause (withdrawals still work), no owner access to user balances.
-- Prices are in NEAR, so a probability of 0.62 means a Yes share costs 0.62 NEAR. NEAR's dollar price does not affect the probability.
+- Prices are in NEAR, so a probability of 0.62 means a Yes share costs 0.62 NEAR.
 
-## 4. Data & indexing
+## 4. Data and ingestion
 
-- PostgreSQL via Drizzle; amounts `numeric(39,0)` ↔ `bigint`; probabilities integer ppm.
-- **Ingestion**: after a wallet-signed trade, the frontend submits the tx hash; the API fetches the receipt from RPC, checks receiver/signer/success, parses `EVENT_JSON` logs and applies them idempotently (`unique(transaction_id, event_index)`). A reconciler periodically compares DB pools with `get_market` views.
-- **SIMULATED mode** executes the identical math against the Postgres ledger with row locks; every row carries `execution_mode` and the UI labels it.
+- PostgreSQL via Drizzle; amounts `numeric(39,0)` mapped to `bigint`; probabilities are integer parts per million. No floats in accounting.
+- **On-chain mode**: the browser sends only a transaction hash. The API fetches it from RPC, requires success and the right receiver,
+  parses the contract's events and applies them once (`unique(network, tx_hash)` and `unique(transaction_id, event_index)`).
+  Positions and trades are public chain data, so they are read by account id without a login.
+- **Simulated mode** (local development only) runs the same math against a Postgres ledger with row locks; every row carries
+  `execution_mode` and the UI labels it "Simulated". The deployed app does not use it and seeds no sample markets.
 
-## 5. Security posture (summary)
+## 5. Encyclopedia pipeline
 
-- Human trades & withdrawals require 1 yoctoNEAR ⇒ full-access-key wallet confirmation; a leaked dApp function-call key cannot trade or withdraw for a human.
-- Agents: own account, function-call key only, owner-funded balance, on-chain `enabled`/`max_trade`/`spend_limit`; cannot withdraw.
-- Slippage (`min_out`) and single-use client order ids on every trade (on-chain and off-chain).
-- Storage is paid per account (NEP-145 style), so users cannot grow contract state for free.
+1. Update policy: first revision, newly verified evidence, or a Yes move of at least `ARTICLE_MIN_MOVE_PPM` (default 3 points); at most one revision per `ARTICLE_MIN_INTERVAL_S`; one writer per claim at a time.
+2. Structured input from the database: claim, live probability, sampled history, trading stats, verified evidence (keys `E1…`), previous revision.
+3. NEAR AI Cloud chat completion; the reply must be one JSON object with eight fixed sections (zod-validated, one retry).
+4. Citations that are not provided evidence keys are dropped and reported.
+5. The revision is stored next to earlier ones with the inference record (hashes, signature, signer, checks).
+
+Evidence: a person submits a URL and a quote. The server fetches the page (https only, public hosts only, size and time limits),
+strips markup, and marks the quote found or not found. Only found quotes are given to the model.
+
+## 6. Security posture
+
+- Human trades and withdrawals require 1 yoctoNEAR, which forces a full-access-key wallet confirmation.
+- Slippage bound (`min_out`) and single-use client order ids on every trade.
+- Agents (planned): own account, function-call key only, owner-funded balance, on-chain `enabled` / `max_trade` / `spend_limit`, no withdrawals. Enforced and unit-tested in the contract; no agent runs yet.
+- Open endpoints (evidence submission, generate) are rate-limited; generation is bounded by the update policy.
+- Centralised parts: the owner creates markets, sets caps, can pause, and is the resolver (with a challenge window). The API is a mirror, not a custodian.
