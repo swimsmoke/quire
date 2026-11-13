@@ -8,7 +8,7 @@ import { Sheet } from "./ui";
 export function ModeTag({ mode }: { mode: ExecutionMode | "CONFIDENTIAL_TEE" }) {
   const label = { SIMULATED: "Simulated", ONCHAIN_TESTNET: "NEAR testnet", ONCHAIN_MAINNET: "NEAR mainnet", CONFIDENTIAL_TEE: "TEE inference" }[mode];
   const tone = mode === "SIMULATED" ? "text-sim bg-sim/12" : "text-tint bg-tint/12";
-  return <span className={`inline-flex h-5 items-center rounded-md px-2 text-caption font-medium ${tone}`}>{label}</span>;
+  return <span className={`inline-flex h-5 shrink-0 items-center rounded-md px-2 text-caption font-medium whitespace-nowrap ${tone}`}>{label}</span>;
 }
 
 /** Nav-bar badge explaining simulated mode. */

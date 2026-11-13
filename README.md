@@ -16,6 +16,7 @@ Built at NEAR HACKATHON (November 2026). Runs on testnet; the contract is unaudi
 
 | | |
 |---|---|
+| ![Live encyclopedia revision with its enclave signature check](docs/screenshots/encyclopedia-live.jpg) | **From the live site: proof behind every page.** This is the Bitcoin claim on NEAR testnet. Scribe wrote revision 2 on its own when Yes moved 6.2 points. Under "How this revision was generated" you can see the model, the hashes of the exact request and response, the enclave's signing key, and that the signature and attestation checks passed. |
 | ![Ask page finding an existing market](docs/screenshots/ask.jpg)<br>**Ask.** Existing markets show up as you type; if none fits, AI drafts a new one. | ![A market with its chart and trade panel](docs/screenshots/market.jpg)<br>**Trade.** Buy Yes or No; every trade moves the price. |
 | ![A trader's profile with profit chart and positions](docs/screenshots/profile.jpg)<br>**Profiles.** Profit over time, positions, trades and markets opened. | ![Leaderboard ranked by profit](docs/screenshots/leaderboard.jpg)<br>**Leaderboard.** Traders ranked by profit across every claim. |
 | ![Slide-out menu with account and links](docs/screenshots/menu.jpg)<br>**Menu.** Account, profile, leaderboard and cross-chain funding. | ![Home and a market on a phone](docs/screenshots/mobile.jpg)<br>**Phone.** Same app with a bottom tab bar. |
