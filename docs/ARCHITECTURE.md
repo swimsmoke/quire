@@ -71,8 +71,9 @@ Amounts are kept in micro-NEAR units inside the contract, so the integer FPMM ma
 4. Citations that are not provided evidence keys are dropped and reported.
 5. The revision is stored next to earlier ones with the inference record (hashes, signature, signer, checks).
 
-Evidence: a person submits a URL and a quote, or Scout finds one itself. When a claim opens, Scout searches Wikipedia for the
-claim's subject and submits the opening sentences of the best matches. Either way the server fetches the page (https only,
+Evidence: a person submits a URL and a quote, or Scout finds one itself. Scout searches Wikipedia with the claim's subject and
+the words of its question, reads the full text of up to three articles, ranks sentences by relevance (shared words, figures,
+dates), downloads each page to keep only sentences that appear on it, and submits at most two per page and five per run. Either way the server fetches the page (https only,
 public hosts only, size and time limits), strips markup, and marks the quote found or not found. Only found quotes are given to the model.
 
 Automatic runs: when a market is created, Scout researches it and Scribe writes the first revision with no one asking. After each

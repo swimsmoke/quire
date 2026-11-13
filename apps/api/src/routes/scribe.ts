@@ -9,6 +9,7 @@ import { confidentialChat, NearAiError } from "../ai/nearai.js";
 import { parseArticle, SYSTEM_PROMPT } from "../ai/article.js";
 import { pgErrorCode } from "../market/engine.js";
 import { findCandidates } from "../ai/research.js";
+import { htmlToText, normalize } from "../ai/evidence-check.js";
 
 const CATEGORIES = ["crypto", "ai", "near", "tech", "science", "sports", "politics", "economy", "culture", "other"] as const;
 const DraftSchema = z.object({
@@ -132,18 +133,33 @@ export async function scribeRoutes(app: FastifyInstance) {
     const { slug } = z.object({ slug: z.string().max(80) }).parse(req.params);
     const row = await marketBySlug(app, slug);
     if (!row) return reply.code(404).send({ error: "MARKET_NOT_FOUND" });
-    const candidates = await findCandidates(row.claims.subject, app.webFetch ?? fetch);
+    const candidates = await findCandidates(row.claims.subject, row.claims.title, app.webFetch ?? fetch);
+    const MAX_PER_PAGE = 2, MAX_TOTAL = 5;
+    const perPage = new Map<string, number>();
     let verified = 0;
-    const seen = new Set<string>();
+    // read each page once and keep only the sentences that really appear on it, so a sentence that
+    // renders differently on the page never shows up as a failed quote in the claim's evidence
+    const pageText = new Map<string, string | null>();
     for (const c of candidates) {
-      if (seen.has(c.url)) continue; // one quote per page is enough
+      if (verified >= MAX_TOTAL) break;
+      if ((perPage.get(c.url) ?? 0) >= MAX_PER_PAGE) continue;
+      if (!pageText.has(c.url)) {
+        try {
+          const res = await (app.webFetch ?? fetch)(c.url, { headers: { "user-agent": "QuireEvidenceBot/0.1 (evidence retrieval for a hackathon project)" }, signal: AbortSignal.timeout(12_000) });
+          pageText.set(c.url, res.ok ? normalize(htmlToText(await res.text())) : null);
+        } catch {
+          pageText.set(c.url, null);
+        }
+      }
+      if (!pageText.get(c.url)?.includes(normalize(c.excerpt))) continue;
       const r = await app.inject({ method: "POST", url: `/markets/${slug}/evidence`, headers: { "x-quire-internal": app.internalKey }, payload: { url: c.url, excerpt: c.excerpt, stance: "CONTEXT", submittedBy: "Scout" } });
-      if (r.statusCode === 409) seen.add(c.url); // this page is already cited for the claim
       if (r.statusCode === 201 && r.json().check.status === "EXCERPT_VERIFIED") {
         verified++;
-        seen.add(c.url);
+        perPage.set(c.url, (perPage.get(c.url) ?? 0) + 1);
       }
     }
+    // new verified evidence is a reason for a new revision; the update policy has the final say
+    if (verified > 0) void runKnowledgePipeline(app, slug, { research: false });
     return { candidates: candidates.length, verified };
   });
 

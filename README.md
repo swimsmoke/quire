@@ -35,8 +35,8 @@ These were captured from a local run in practice mode, so records carry a "Simul
 **On the live site**
 
 1. Open the [Bitcoin claim](https://quire-gamma.vercel.app/markets/btc-above-150k). You'll see the Yes price, a chart, and trades from two testnet wallets.
-2. Scroll to **Encyclopedia** and open **How this revision was generated**. It shows the model, hashes of the exact request and response, and whether the enclave's signature checked out.
-3. Scroll to **Evidence**. Each quote has been fetched from its source and checked word for word.
+2. Tap **Encyclopedia verified** next to the title. The panel at the top of the encyclopedia shows the model, whether the enclave's signature and attestation checked out, and (one tap further) the hashes of the exact request and response.
+3. Scroll to **Evidence**. Each quote has been fetched from its source and checked word for word. **Find sources with Scout** runs the research again.
 4. Connect a NEAR testnet wallet (Meteor works), deposit a little test NEAR in **Funds**, and buy Yes or No. Once the transaction lands, the price moves and the trade shows up with a link to the explorer.
 5. Go to **Ask** and type a question. Matching claims show up as you type. For a new one, press **Draft the market with AI**, check the fields and open it. Within a minute or so the new claim has sources from Scout and a first encyclopedia page.
 6. **Leaderboard** ranks traders by profit across all claims. Click a name for their profile: profit chart, positions, trades and the markets they opened.
@@ -84,7 +84,7 @@ python apps/web/e2e/trade_flow.py  # browser walk-through of the steps above; ne
 
 **Asking.** Anyone with a deposit can create a market; the contract takes the seed liquidity from their balance (0.1 NEAR minimum) and gives the pool back to them when the claim resolves. Search matches on keywords, so differently worded questions still find the existing claim.
 
-**Research.** When a claim opens, Scout searches Wikipedia for its subject and submits the opening sentences of the best matches. Like any submitted source, each page is fetched and the quote must appear on it word for word.
+**Research.** When a claim opens (or when someone presses **Find sources with Scout**), Scout searches Wikipedia with the claim's subject and with the words of the question, reads the full articles, and ranks sentences by how much they say about the claim: shared words, figures and dates. It downloads each page and keeps only sentences that appear on it word for word, at most two per page, then submits them through the same check as any other source. New verified sources prompt Scribe to consider a new revision.
 
 **Encyclopedia.** The first revision is written automatically when a claim opens. After that, a new one is written when there's new verified evidence or the price moves 3 points or more. The model gets the live price, its history, trading stats, the checked evidence and the previous revision, and has to return a fixed eight-section structure. Citations that don't match real evidence are dropped. Old revisions are kept.
 

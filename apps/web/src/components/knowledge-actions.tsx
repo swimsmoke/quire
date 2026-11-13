@@ -150,3 +150,45 @@ export function WritingNotice({ fresh }: { fresh: boolean }) {
     </p>
   );
 }
+
+/** Ask Scout to research the claim again: it adds only quotes it found word for word on the page. */
+export function FindSources({ slug }: { slug: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  return (
+    <div className="mt-6">
+      <button
+        disabled={busy}
+        className={`${buttonSecondary} h-10`}
+        onClick={async () => {
+          setBusy(true);
+          setMsg(null);
+          try {
+            const r = await clientRequest<{ candidates: number; verified: number }>(`/markets/${slug}/research`, { method: "POST" });
+            setMsg({
+              ok: true,
+              text: r.verified
+                ? `Scout added ${r.verified} ${r.verified === 1 ? "source" : "sources"}, each quote checked word for word on its page.`
+                : r.candidates
+                  ? "Scout found nothing new that it could check word for word. Existing sources are unchanged."
+                  : "Scout found no relevant pages this time.",
+            });
+            router.refresh();
+          } catch (e) {
+            setMsg({ ok: false, text: e instanceof ApiError ? e.message : "Couldn't reach Quire. Try again." });
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Scout is reading…" : "Find sources with Scout"}
+      </button>
+      {msg && (
+        <p role="status" className={`mt-2 max-w-[62ch] text-footnote ${msg.ok ? "text-label-2" : "text-no"}`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
+  );
+}

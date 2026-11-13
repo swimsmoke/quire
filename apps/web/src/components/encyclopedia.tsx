@@ -1,7 +1,6 @@
 import { ShieldCheck, ShieldQuestion, ChevronDown } from "lucide-react";
 import type { Encyclopedia, Evidence } from "@/lib/types";
 import { dateTime, pct } from "@/lib/format";
-import { ModeTag } from "./mode";
 
 const SECTION_ORDER: [string, string][] = [
   ["overview", "Overview"],
@@ -34,7 +33,8 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
 
   return (
     <article className="max-w-[66ch]">
-      <p className="text-footnote text-label-2">
+      <VerificationPanel cur={cur} />
+      <p className="mt-5 text-footnote text-label-2">
         AI-generated interpretation of the market and the cited evidence, not an established fact. Market probability is collective belief, not truth.
       </p>
       <div className="mt-6 space-y-8">
@@ -65,38 +65,72 @@ export function EncyclopediaArticle({ data, evidence, currentPpm }: { data: Ency
           Revision {cur.revisionNumber}, written {dateTime(cur.createdAt)} when Yes was {pct(cur.priceYesPpm)}. Trigger: {cur.triggerReason}.
           {drift >= 20_000 && <span className="text-no"> Yes has since moved to {pct(currentPpm)}; a revision is due.</span>}
         </p>
-        {cur.inference && <InferenceMeta inf={cur.inference} />}
       </footer>
     </article>
   );
 }
 
-function InferenceMeta({ inf }: { inf: NonNullable<NonNullable<Encyclopedia["current"]>["inference"]> }) {
-  const verified = inf.signatureVerified === true;
+type Current = NonNullable<Encyclopedia["current"]>;
+
+function Check({ ok, label }: { ok: boolean | null | undefined; label: string }) {
+  const tone = ok === true ? "bg-yes/12 text-yes" : ok === false ? "bg-no/12 text-no" : "bg-fill text-label-2";
   return (
-    <details className="group mt-4">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-sub text-label">
-        {verified ? <ShieldCheck size={16} className="text-yes" aria-hidden /> : <ShieldQuestion size={16} className="text-label-2" aria-hidden />}
-        How this revision was generated
-        <ModeTag mode={inf.mode === "CONFIDENTIAL_TEE" ? "CONFIDENTIAL_TEE" : "SIMULATED"} />
-        <ChevronDown size={15} className="ml-auto text-label-3 transition-transform duration-300 ease-ios group-open:rotate-180" aria-hidden />
-      </summary>
-      <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-footnote sm:grid-cols-[11rem_1fr]">
-        <dt className="text-label-2">Model</dt>
-        <dd>{inf.model} via {inf.provider}</dd>
-        <dt className="text-label-2">Request hash</dt>
-        <dd className="font-mono break-all">{inf.requestHash ?? "n/a"}</dd>
-        <dt className="text-label-2">Response hash</dt>
-        <dd className="font-mono break-all">{inf.responseHash ?? "n/a"}</dd>
-        <dt className="text-label-2">Enclave signing key</dt>
-        <dd className="font-mono break-all">{inf.signingAddress ?? "n/a"}</dd>
-        <dt className="text-label-2">Signature</dt>
-        <dd>{inf.signatureVerified == null ? "Not available" : verified ? "Valid: the enclave key signed the hashes of exactly what Quire sent and received" : "Failed verification"}</dd>
-        <dt className="text-label-2">Attestation</dt>
-        <dd>{inf.attestationBindsSigner == null ? "Not checked" : inf.attestationBindsSigner ? "Signing key is listed in NEAR AI's attestation report for this model" : "Signing key not found in the attestation report"}</dd>
-      </dl>
-      <p className="mt-3 text-footnote text-label-2">This shows where and how the text was generated. Quire checks the signature and the report listing, not the hardware quote itself, and none of it says whether the content is correct.</p>
-    </details>
+    <span className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-footnote font-medium whitespace-nowrap ${tone}`}>
+      {ok === true ? <Check2 /> : ok === false ? <span aria-hidden>✕</span> : <span aria-hidden>–</span>}
+      {label}
+    </span>
+  );
+}
+const Check2 = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+    <path d="M2.5 6.3 5 8.6 9.5 3.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/** How this revision was made, at the top of the article: the results up front, the hashes one tap away. */
+export function VerificationPanel({ cur }: { cur: Current }) {
+  const inf = cur.inference;
+  if (!inf) return null;
+  const verified = inf.signatureVerified === true;
+  const tee = inf.mode === "CONFIDENTIAL_TEE";
+  return (
+    <section id="verification" aria-label="How this revision was generated" className="glass scroll-mt-28 rounded-2xl p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        {verified ? <ShieldCheck size={22} className="mt-0.5 shrink-0 text-yes" aria-hidden /> : <ShieldQuestion size={22} className="mt-0.5 shrink-0 text-label-2" aria-hidden />}
+        <div className="min-w-0">
+          <p className="text-body font-semibold">{verified ? "Written in a hardware enclave, and the signature checks out" : "Generation record"}</p>
+          <p className="mt-0.5 text-footnote text-label-2">
+            Revision {cur.revisionNumber} by {inf.model.split("/").pop()} on NEAR AI Cloud, {dateTime(cur.createdAt)}, when Yes was {pct(cur.priceYesPpm)}.
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Check ok={tee ? true : null} label={tee ? "TEE inference" : "No enclave"} />
+        <Check ok={inf.signatureVerified} label={inf.signatureVerified == null ? "Signature not available" : verified ? "Signature valid" : "Signature failed"} />
+        <Check ok={inf.attestationBindsSigner} label={inf.attestationBindsSigner == null ? "Attestation not checked" : inf.attestationBindsSigner ? "Key attested" : "Key not in report"} />
+      </div>
+      <details className="group mt-3">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-footnote font-medium text-tint">
+          Show hashes and signing key
+          <ChevronDown size={14} className="transition-transform duration-300 ease-ios group-open:rotate-180" aria-hidden />
+        </summary>
+        <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-footnote sm:grid-cols-[10rem_1fr]">
+          <dt className="text-label-2">Model</dt>
+          <dd className="break-all">{inf.model} via {inf.provider}</dd>
+          <dt className="text-label-2">Request hash</dt>
+          <dd className="font-mono break-all">{inf.requestHash ?? "n/a"}</dd>
+          <dt className="text-label-2">Response hash</dt>
+          <dd className="font-mono break-all">{inf.responseHash ?? "n/a"}</dd>
+          <dt className="text-label-2">Enclave signing key</dt>
+          <dd className="font-mono break-all">{inf.signingAddress ?? "n/a"}</dd>
+          <dt className="text-label-2">Signature</dt>
+          <dd>{inf.signatureVerified == null ? "Not available" : verified ? "Valid: the enclave key signed the hashes of exactly what Quire sent and received" : "Failed verification"}</dd>
+          <dt className="text-label-2">Attestation</dt>
+          <dd>{inf.attestationBindsSigner == null ? "Not checked" : inf.attestationBindsSigner ? "Signing key is listed in NEAR AI's attestation report for this model" : "Signing key not found in the attestation report"}</dd>
+        </dl>
+        <p className="mt-3 text-footnote text-label-2">This shows where and how the text was generated. Quire checks the signature and the report listing, not the hardware quote itself, and none of it says whether the content is correct.</p>
+      </details>
+    </section>
   );
 }
 

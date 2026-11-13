@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bot, ChevronLeft, ChevronRight, UserRound } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, ShieldCheck, UserRound } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { PriceChart } from "@/components/price-chart";
 import { TradeTicket } from "@/components/trade-ticket";
 import { TradeTape } from "@/components/trade-tape";
 import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
-import { AddEvidence, GenerateArticle, WritingNotice } from "@/components/knowledge-actions";
+import { AddEvidence, FindSources, GenerateArticle, WritingNotice } from "@/components/knowledge-actions";
 import { ChangePill } from "@/components/market-list";
 import { SectionHeader } from "@/components/section";
-import { ago, dateTime, pct, fmtNear } from "@/lib/format";
+import { ago, dateTime, pct, fmtNear, fmtNearCompact } from "@/lib/format";
 import { category } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -48,6 +48,11 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
           <span>{category(m.category)}</span>
           <ModeTag mode={m.executionMode} />
           {m.status !== "ACTIVE" && <span className="font-medium text-no">{m.status.toLowerCase().replace(/_/g, " ")}</span>}
+          {ency.current?.inference?.signatureVerified === true && (
+            <a href="#verification" className="inline-flex h-5 items-center gap-1 rounded-md bg-yes/12 px-2 text-caption font-medium whitespace-nowrap text-yes hover:bg-yes/20">
+              <ShieldCheck size={12} aria-hidden /> Encyclopedia verified
+            </a>
+          )}
         </p>
         <h1 className="mt-2 max-w-[24ch] text-[2rem] leading-[1.12] font-semibold tracking-[-0.02em] md:text-large">{claim.title}</h1>
         <p className="mt-3 text-sub text-label-2">
@@ -61,9 +66,9 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
           <dl className="tabular mt-8 grid grid-cols-2 gap-x-6 border-t hairline sm:grid-cols-3">
             <Stat k="No" v={pct(m.probabilityNoPpm)} />
             <Stat k="24h change" v={<ChangePill ppm={m.change24hPpm} />} />
-            <Stat k="24h volume" v={`${fmtNear(m.volume24h, 0)} NEAR`} />
-            <Stat k="Total volume" v={`${fmtNear(m.volume, 0)} NEAR`} />
-            <Stat k="Liquidity" v={`${fmtNear(m.liquidity, 0)} NEAR`} />
+            <Stat k="24h volume" v={`${fmtNearCompact(m.volume24h)} NEAR`} />
+            <Stat k="Total volume" v={`${fmtNearCompact(m.volume)} NEAR`} />
+            <Stat k="Liquidity" v={`${fmtNearCompact(m.liquidity)} NEAR`} />
             <Stat
               k="Traders"
               v={
@@ -111,6 +116,7 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
           <section aria-labelledby="ev-h" className="border-t hairline pt-8">
             <SectionHeader id="ev-h" title="Evidence" />
             <EvidenceList evidence={ev.evidence} />
+            <FindSources slug={m.slug} />
             <AddEvidence slug={m.slug} />
           </section>
 

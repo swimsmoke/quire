@@ -24,12 +24,23 @@ export function fmtNear(v: string | number | bigint, frac = 2) {
   return `${neg ? "-" : ""}${grouped}${f ? "." + f : ""}`;
 }
 
-/** compact NEAR: 12_345_000_000 -> "12.3k" */
+/**
+ * Short NEAR amount that never hides a small balance: 0.4 stays "0.4", 12.5 stays "12.5",
+ * large values compact to "12.3k" / "1.2M". (Testnet markets often hold well under 1 NEAR.)
+ */
 export function fmtNearCompact(v: string | bigint) {
-  const n = big(v) / 1_000_000n; // whole NEAR
-  if (n >= 1_000_000n) return `${formatUnits(n, 6, 1)}M`;
-  if (n >= 1_000n) return `${formatUnits(n, 3, 1)}k`;
-  return fmtNear(v, 0);
+  const u = big(v); // micro-NEAR
+  const neg = u < 0n;
+  const a = neg ? -u : u;
+  const sign = neg ? "-" : "";
+  if (a === 0n) return "0";
+  if (a < 1_000n) return `${sign}<0.001`;
+  const trim = (s: string) => (s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s);
+  if (a < 1_000_000n) return sign + trim(formatUnits(a, 6, 3)); // under 1 NEAR: up to 3 decimals
+  if (a < 1_000_000_000n) return sign + trim(fmtNear(a, 2)); // under 1,000 NEAR: up to 2 decimals
+  const whole = a / 1_000_000n;
+  if (whole >= 1_000_000n) return `${sign}${trim(formatUnits(whole, 6, 1))}M`;
+  return `${sign}${trim(formatUnits(whole, 3, 1))}k`;
 }
 
 export function ago(iso: string | null | undefined) {

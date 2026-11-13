@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, Copy, Share } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { useSession } from "@/lib/session";
-import { ago, fmtNear, pct, signed, tone } from "@/lib/format";
+import { ago, fmtNear, fmtNearCompact, pct, signed, tone } from "@/lib/format";
 import { buttonPrimary, buttonSecondary, Sheet } from "./ui";
 import { ChainFunds } from "./trade-ticket";
 
@@ -229,7 +229,7 @@ export function ProfileTabs({ p }: { p: Profile }) {
           key: c.slug,
           href: `/markets/${c.slug}`,
           title: c.question,
-          sub: `Opened ${ago(c.createdAt)}, ${fmtNear(c.volume, 0)} NEAR traded`,
+          sub: `Opened ${ago(c.createdAt)}, ${fmtNearCompact(c.volume)} NEAR traded`,
           right: <span className="font-semibold">{pct(c.probabilityYesPpm, 0)}</span>,
         }))}
       />,

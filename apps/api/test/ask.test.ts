@@ -8,7 +8,11 @@ import { eq } from "drizzle-orm";
 
 const SLUG = "btc-above-150k";
 const WIKI = "https://en.wikipedia.org/wiki/Bitcoin";
-const EXTRACT = "Bitcoin is the first decentralized cryptocurrency. Nodes in the peer-to-peer bitcoin network verify transactions through cryptography.";
+const ON_PAGE = "In 2025 bitcoin traded above $120,000 for the first time on major exchanges.";
+const ON_PAGE_2 = "Bitcoin's price has been volatile, with several drawdowns of more than 50% since 2011.";
+const NOT_ON_PAGE = "Analysts said bitcoin would reach $150,000 within the year, according to a forecast.";
+const OFF_TOPIC = "The protocol was described in a white paper published under a pseudonym.";
+const EXTRACT = [OFF_TOPIC, ON_PAGE, NOT_ON_PAGE, ON_PAGE_2].join(" ");
 let draftReply = JSON.stringify({ question: "Will Bitcoin trade above $150,000?", subject: "Bitcoin", category: "crypto", description: "Whether BTC trades above $150,000 on major exchanges.", resolutionCriteria: "Resolves YES when BTC/USD closes above $150,000 on a major exchange. Open until then." });
 
 const aiFetch = (async (url: unknown) => {
@@ -20,8 +24,9 @@ const aiFetch = (async (url: unknown) => {
 const webFetch = (async (url: unknown) => {
   const u = String(url);
   if (u.includes("list=search")) return new Response(JSON.stringify({ query: { search: [{ title: "Bitcoin" }] } }));
-  if (u.includes("/page/summary/")) return new Response(JSON.stringify({ extract: EXTRACT, content_urls: { desktop: { page: WIKI } } }));
-  return new Response(`<html><title>Bitcoin - Wikipedia</title><body><p>${EXTRACT}</p></body></html>`, { headers: { "content-type": "text/html" } });
+  if (u.includes("prop=extracts")) return new Response(JSON.stringify({ query: { pages: { "1": { title: "Bitcoin", extract: EXTRACT, fullurl: WIKI } } } }));
+  // the article as served: footnote markers in the HTML, and without the forecast sentence
+  return new Response(`<html><title>Bitcoin - Wikipedia</title><body><p>${OFF_TOPIC}</p><p>${ON_PAGE.replace("time", "time<sup class=\"reference\">[12]</sup>")}</p><p>${ON_PAGE_2}</p></body></html>`, { headers: { "content-type": "text/html" } });
 }) as typeof fetch;
 
 let base: Awaited<ReturnType<typeof setupTestApp>>;
@@ -50,12 +55,17 @@ describe("asking a question", () => {
     expect(r.statusCode).toBe(502);
     draftReply = keep;
   });
-  it("Scout finds a source by itself and only keeps quotes that are on the page", async () => {
+  it("Scout picks sentences about the claim, keeps only quotes that are on the page, and leaves no failed quotes behind", async () => {
     const r = await app.inject({ method: "POST", url: `/markets/${SLUG}/research` });
     expect(r.statusCode).toBe(200);
-    expect(r.json().verified).toBe(1);
+    expect(r.json().verified).toBe(2);
+    const ev = (await app.inject({ method: "GET", url: `/markets/${SLUG}/evidence` })).json().evidence as { excerpt: string; checkStatus: string }[];
+    const excerpts = ev.map((e) => e.excerpt);
+    expect(excerpts).toContain(ON_PAGE); // the most relevant sentence, despite the footnote marker
+    expect(excerpts).not.toContain(NOT_ON_PAGE); // never submitted, so no "not found" clutter
+    expect(excerpts).not.toContain(OFF_TOPIC); // shares no word with the claim
     const again = await app.inject({ method: "POST", url: `/markets/${SLUG}/research` });
-    expect(again.json().verified).toBe(0); // same quote is not added twice
+    expect(again.json().verified).toBe(0); // the same quotes are not added twice
   });
 });
 
