@@ -8,7 +8,7 @@ export async function intentsRoutes(app: FastifyInstance) {
   app.get("/intents/tokens", async (_req, reply) => {
     try {
       const { tokens, nearPrice } = await listTokens(cfg());
-      return { tokens, nearPrice, liveQuotes: !!(app.cfg.ONECLICK_API_KEY || app.cfg.ONECLICK_JWT), network: "mainnet", available: app.cfg.QUIRE_EXECUTION_MODE === "ONCHAIN_MAINNET" };
+      return { tokens, nearPrice, liveQuotes: true, keyed: !!(app.cfg.ONECLICK_API_KEY || app.cfg.ONECLICK_JWT), network: "mainnet", available: app.cfg.QUIRE_EXECUTION_MODE === "ONCHAIN_MAINNET" };
     } catch (e) {
       return reply.code(502).send({ error: "INTENTS_UNAVAILABLE", message: (e as Error).message });
     }

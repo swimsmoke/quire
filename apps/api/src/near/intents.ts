@@ -81,11 +81,11 @@ export async function quoteToNear(cfg: IntentsCfg, token: IntentsToken, nearPric
     return { source: "PRICE_ESTIMATE", amountIn: amount, amountInUsd: usd, amountOutNear: (usd / nearPrice).toFixed(4), note };
   };
   const refund = DRY_REFUND[token.blockchain];
-  if (!cfg.apiKey && !cfg.jwt) return estimate("Live quotes need a 1Click API key on the server, so this is worked out from 1Click's current token prices.");
   if (!refund) return estimate(`Live quotes from ${token.blockchain} aren't set up here, so this is worked out from 1Click's current token prices.`);
+  // A key is optional for 1Click; without one the quote carries a 0.2% fee. Ask either way.
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (cfg.apiKey) headers["x-api-key"] = cfg.apiKey;
-  else headers.authorization = `Bearer ${cfg.jwt}`;
+  else if (cfg.jwt) headers.authorization = `Bearer ${cfg.jwt}`;
   try {
     const r = await cfg.fetchFn(`${cfg.baseUrl}/v0/quote`, {
       method: "POST",
@@ -108,6 +108,7 @@ export async function quoteToNear(cfg: IntentsCfg, token: IntentsToken, nearPric
       }),
     });
     const body = (await r.json().catch(() => ({}))) as { message?: string; quote?: { amountInUsd: string; amountOutFormatted: string; minAmountOut: string; timeEstimate: number } };
+    if (r.status === 401 || r.status === 403) return estimate("1Click asked for an API key for live quotes, so this is worked out from its current token prices.");
     if (!r.ok || !body.quote) return estimate(`1Click didn't return a quote${body.message ? ` (${body.message})` : ` (${r.status})`}, so this is worked out from its current token prices.`);
     const q = body.quote;
     return {

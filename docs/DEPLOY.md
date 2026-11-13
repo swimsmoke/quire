@@ -69,7 +69,7 @@ API environment (Render):
 | `WEB_ORIGIN` | the web app's URL, for CORS |
 | `SESSION_SECRET` | 32+ random characters |
 | `NEAR_AI_API_KEY` | from cloud.near.ai; needs a spending limit or credit |
-| `ONECLICK_API_KEY` | optional, from partners.near-intents.org; without it the funding page shows price estimates |
+| `ONECLICK_API_KEY` | optional, from partners.near-intents.org; avoids 1Click's 0.2% fee on quotes |
 
 Web environment (Vercel): `NEXT_PUBLIC_API_URL` = the API's URL.
 

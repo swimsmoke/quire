@@ -9,13 +9,15 @@
 
 **Ask anything. Let the market answer.**
 
-Quire is a truth market on NEAR. You bring a question. If someone already asked it, you see what people currently believe. If not, you open a market on it: AI can draft the claim for you, you seed it with as little as 0.1 NEAR, and people trade Yes or No from their own wallets. The market never closes. An AI running on NEAR AI Cloud researches the claim and keeps an encyclopedia page for it, rewritten as the price and the evidence change.
+**The problem.** When you want to know whether something is true or will happen, you get either one confident source or a pile of opinions, and no sense of how sure anyone is. Prediction markets give you a number but no explanation; encyclopedias explain but don't say how likely something is, and AI answers can't show where they came from.
+
+**What Quire does.** Quire is a truth market on NEAR. You bring a question. If someone already asked it, you see what people currently believe. If not, you open a market on it: AI can draft the claim for you, you seed it with as little as 0.1 NEAR, and people trade Yes or No from their own wallets. The market never closes. An AI running on NEAR AI Cloud researches the claim and keeps an encyclopedia page for it, rewritten as the price and the evidence change.
 
 Built at NEAR HACKATHON (November 2026). Runs on testnet; the contract is unaudited.
 
 - App: https://quire-gamma.vercel.app
 - Contract: [`hardsealowner.testnet`](https://testnet.nearblocks.io/address/hardsealowner.testnet)
-- Tracks: Open Innovation, Privacy & Private AI
+- Tracks: Privacy & Private AI, Open Innovation, Unstoppable DeFi
 
 ![Quire's home page: ask a yes or no question](docs/screenshots/home.jpg)
 
@@ -34,7 +36,7 @@ These were captured from a local run in practice mode, so records carry a "Simul
 
 **On the live site**
 
-1. Open the [Bitcoin claim](https://quire-gamma.vercel.app/markets/btc-above-150k). You'll see the Yes price, a chart, and trades from two testnet wallets.
+1. Open the [Bitcoin claim](https://quire-gamma.vercel.app/markets/btc-above-150k). You see the Yes price, its chart, and trades from two testnet wallets tagged "NEAR testnet".
 2. Tap **Encyclopedia verified** next to the title. The panel at the top of the encyclopedia shows the model, whether the enclave's signature and attestation checked out, and (one tap further) the hashes of the exact request and response.
 3. Scroll to **Evidence**. Each quote has been fetched from its source and checked word for word. **Find sources with Scout** runs the research again.
 4. Connect a NEAR testnet wallet (Meteor works), deposit a little test NEAR in **Funds**, and buy Yes or No. Once the transaction lands, the price moves and the trade shows up with a link to the explorer.
@@ -88,7 +90,7 @@ python apps/web/e2e/trade_flow.py  # browser walk-through of the steps above; ne
 
 **Encyclopedia.** The first revision is written automatically when a claim opens. After that, a new one is written when there's new verified evidence or the price moves 3 points or more. The model gets the live price, its history, trading stats, the checked evidence and the previous revision, and has to return a fixed eight-section structure. Citations that don't match real evidence are dropped. Old revisions are kept.
 
-**Funding from other chains.** NEAR Intents (1Click API) swaps assets like USDC on Base, ETH or SOL into NEAR. Quire's API reads 1Click's token list and asks for dry quotes, which never create a deposit address. NEAR Intents only runs on mainnet and Quire is on testnet, so sending is switched off and the page says so. With `ONECLICK_API_KEY` set the quotes come from solvers; without it the page shows an estimate from 1Click's live prices, labelled as such.
+**Funding from other chains.** NEAR Intents (1Click API) swaps assets like USDC on Base, ETH or SOL into NEAR. Quire's API reads 1Click's token list and asks for dry quotes, which never create a deposit address. NEAR Intents only runs on mainnet and Quire is on testnet, so sending is switched off and the page says so. The quotes come from 1Click's solvers; an `ONECLICK_API_KEY` is optional and only avoids 1Click's 0.2% fee. If 1Click doesn't return a quote, the page shows an estimate from its live token prices, labelled as such.
 
 **Verification.** NEAR AI Cloud runs the model inside a hardware enclave that signs hashes of each request and response. Quire hashes what it actually sent and received and checks the signature matches. That proves where the text came from, not that it's true, and the page says so.
 
@@ -120,7 +122,9 @@ Anyone can create a market. The contract owner can pause trading and resolves cl
 - `apps/web`: the web app
 - `docs/`: architecture and deploy notes
 
-Main libraries: near-sdk, Next.js, Fastify, Drizzle, PostgreSQL, NEAR Connect, viem, Tailwind.
+**Libraries:** near-sdk (contract), near-cli-rs (deploy workflow), Next.js and React, Tailwind CSS, lucide-react icons, IBM Plex and Grand Hotel fonts (via Fontsource), NEAR Connect (`@hot-labs/near-connect`, wallets), Fastify, Drizzle ORM with PostgreSQL, Zod, jose, viem (signature recovery), Vitest, fast-check, Playwright.
+
+**Services:** NEAR testnet RPC (FastNEAR), NEAR AI Cloud, NEAR Intents 1Click API, the Wikipedia API (Scout's research), Vercel, Render and Neon for hosting.
 
 ## Licence
 

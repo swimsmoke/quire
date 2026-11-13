@@ -15,12 +15,14 @@ const TOKENS = [
 ];
 let quoteBodies: Record<string, unknown>[] = [];
 let quoteStatus = 200;
+let keyRequired = false;
 const intentsFetch = (async (url: unknown, init?: { body?: unknown; headers?: Record<string, string> }) => {
   const u = String(url);
   if (u.endsWith("/v0/tokens")) return new Response(JSON.stringify(TOKENS));
   if (u.endsWith("/v0/quote")) {
     const b = JSON.parse(String(init?.body));
     quoteBodies.push({ ...b, _key: init?.headers?.["x-api-key"] });
+    if (keyRequired && !init?.headers?.["x-api-key"]) return new Response(JSON.stringify({ message: "unauthorized" }), { status: 401 });
     if (quoteStatus !== 200) return new Response(JSON.stringify({ message: "amount is too low" }), { status: quoteStatus });
     return new Response(JSON.stringify({ quote: { amountIn: b.amount, amountInFormatted: "10", amountInUsd: "10.00", minAmountIn: b.amount, amountOut: "3990000000000000000000000", amountOutFormatted: "3.99", amountOutUsd: "9.97", minAmountOut: "3950000000000000000000000", timeEstimate: 25 } }));
   }
@@ -46,6 +48,7 @@ beforeEach(() => {
   clearTokenCache();
   quoteBodies = [];
   quoteStatus = 200;
+  keyRequired = false;
 });
 
 describe("profit", () => {
@@ -111,11 +114,17 @@ describe("funding from other chains (NEAR Intents)", () => {
     expect(r.quote.minAmountOutNear).toBe("3.9500");
     expect(quoteBodies[0]).toMatchObject({ dry: true, destinationAsset: "nep141:wrap.near", amount: "10000000", _key: "key-123" });
   });
-  it("falls back to a labelled price estimate when there is no key or 1Click refuses", async () => {
+  it("asks for a live quote without a key too (1Click's key is optional)", async () => {
+    const a = (await keyless.inject({ method: "GET", url: "/intents/quote?asset=nep141:base-usdc.omft.near&amount=10" })).json();
+    expect(a.quote.source).toBe("ONECLICK_QUOTE");
+    expect(quoteBodies[0]).toMatchObject({ dry: true, _key: undefined });
+  });
+  it("falls back to a labelled price estimate when 1Click wants a key or refuses", async () => {
+    keyRequired = true;
     const a = (await keyless.inject({ method: "GET", url: "/intents/quote?asset=nep141:base-usdc.omft.near&amount=10" })).json();
     expect(a.quote.source).toBe("PRICE_ESTIMATE");
     expect(a.quote.amountOutNear).toBe("4.0000");
-    expect(quoteBodies).toHaveLength(0);
+    expect(a.quote.note).toContain("API key");
     quoteStatus = 400;
     const b = (await app.inject({ method: "GET", url: "/intents/quote?asset=nep141:base-usdc.omft.near&amount=10" })).json();
     expect(b.quote.source).toBe("PRICE_ESTIMATE");
