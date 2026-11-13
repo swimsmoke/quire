@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatUnits, parseUnits } from "@quire/shared";
@@ -331,7 +332,11 @@ export function TradeTicket({ market }: { market: Market }) {
           )}
           {fundMsg && <p className="mt-2 text-footnote text-label-2">{fundMsg}</p>}
           <p className="mt-5 text-footnote text-label-2">
-            <span className="font-medium text-label">From another chain.</span> Planned: NEAR Intents will swap an asset from another chain into NEAR in your wallet. Not connected in this build.
+            <span className="font-medium text-label">Holding USDC, ETH or SOL instead?</span>{" "}
+            <Link href="/fund" className="text-tint hover:underline">
+              See live NEAR Intents quotes
+            </Link>{" "}
+            for swapping it into NEAR. Sending opens when Quire moves to mainnet.
           </p>
         </div>
       )}
