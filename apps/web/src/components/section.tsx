@@ -19,7 +19,7 @@ export function SectionHeader({ title, action, id }: { title: string; action?: {
 export function PageTitle({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children?: ReactNode }) {
   return (
     <header className="pt-10 pb-6 md:pt-14">
-      <h1 className="text-large font-semibold tracking-[-0.02em]">{title}</h1>
+      <h1 className="text-large font-semibold tracking-[-0.03em]">{title}</h1>
       {subtitle && <p className="mt-2 max-w-[60ch] text-body text-label-2">{subtitle}</p>}
       {children}
     </header>
@@ -27,10 +27,10 @@ export function PageTitle({ title, subtitle, children }: { title: string; subtit
 }
 
 const STEPS = [
-  { t: "Fund", d: "Connect a NEAR wallet and deposit NEAR into the Quire contract. You can withdraw at any time." },
+  { t: "Ask", d: "Type a yes or no question. If Quire already has a market on it you see the current odds; if not, AI drafts one and you open it with as little as 0.1 NEAR." },
   { t: "Trade", d: "Buy Yes or No. Every trade reprices the pool, so the price is the market's current belief." },
-  { t: "Add evidence", d: "Submit a source with a quote. Scout fetches the page and confirms the quote is really there." },
-  { t: "Write", d: "Scribe writes the claim's encyclopedia page on NEAR AI Cloud from the live price and verified evidence." },
+  { t: "Research", d: "Scout finds sources on its own, and anyone can add more. Every quote is checked against the page it came from." },
+  { t: "Write", d: "Scribe writes the claim's encyclopedia page on NEAR AI Cloud from the live price and verified evidence, with no prompt needed." },
   { t: "Revise", d: "When the price moves materially or new evidence is verified, Scribe writes a new revision. Old ones are kept." },
 ];
 

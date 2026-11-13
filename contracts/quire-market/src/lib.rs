@@ -41,6 +41,15 @@ const MAX_URI_LEN: usize = 300;
 
 const GAS_CALLBACK: Gas = Gas::from_tgas(10);
 
+/// Smallest seed for a new market: 0.1 NEAR.
+pub const MIN_MARKET_LIQUIDITY: u128 = 100_000;
+
+fn creator_key(market_id: u32) -> Vec<u8> {
+    let mut k = b"creator:".to_vec();
+    k.extend_from_slice(&market_id.to_le_bytes());
+    k
+}
+
 /// yoctoNEAR per internal unit (1 unit = 1 micro-NEAR).
 pub const YOCTO_PER_UNIT: u128 = 1_000_000_000_000_000_000;
 
@@ -369,7 +378,8 @@ impl QuireMarket {
 
     // ---------------- market admin ----------------
 
-    /// Create a perpetual market seeded from the owner's internal balance.
+    /// Create a perpetual market. Anyone can: the creator seeds it from their own balance
+    /// and receives any leftover outcome shares. A minimum seed keeps out empty markets.
     pub fn create_market(
         &mut self,
         slug: String,
@@ -379,13 +389,15 @@ impl QuireMarket {
         liquidity: U128,
         fee_bps: u16,
     ) -> u32 {
-        self.assert_owner();
+        require!(!self.paused, "ERR_PAUSED");
+        require!(liquidity.0 >= MIN_MARKET_LIQUIDITY, "ERR_LIQUIDITY_TOO_LOW");
         require!(!slug.is_empty() && slug.len() <= MAX_SLUG_LEN, "ERR_BAD_SLUG");
         require!(!question.is_empty() && question.len() <= MAX_QUESTION_LEN, "ERR_BAD_QUESTION");
         require!(category.len() <= MAX_CATEGORY_LEN, "ERR_BAD_CATEGORY");
         require!((fee_bps as u128) <= fpmm::MAX_FEE_BPS, "ERR_BAD_FEE");
         let seed = fpmm::seed_pool(liquidity.0, initial_prob_ppm.0).unwrap_or_else(|e| fpmm_err(e));
-        let owner = self.owner_id.clone();
+        let owner = env::predecessor_account_id();
+        require!(self.accounts.get(&owner).map(|a| a.agent.is_none()).unwrap_or(false), "ERR_NOT_REGISTERED");
         self.debit(&owner, liquidity.0);
         let id = self.markets.len();
         let market = Market {
@@ -408,13 +420,15 @@ impl QuireMarket {
             created_at: env::block_timestamp(),
         };
         self.markets.push(market);
+        // Kept under its own storage key so the Market layout (and existing markets) stay unchanged.
+        env::storage_write(&creator_key(id), owner.as_bytes());
         if seed.lp_yes > 0 || seed.lp_no > 0 {
             self.credit_position(id, &owner, seed.lp_yes, seed.lp_no);
         }
         emit(
             "market_created",
             json!({
-                "market_id": id, "slug": slug, "question": question, "category": category,
+                "market_id": id, "creator": owner, "slug": slug, "question": question, "category": category,
                 "liquidity": liquidity, "fee_bps": fee_bps,
                 "pool_yes": U128(seed.pool.yes), "pool_no": U128(seed.pool.no),
                 "lp_yes": U128(seed.lp_yes), "lp_no": U128(seed.lp_no),
@@ -610,19 +624,29 @@ impl QuireMarket {
         U128(payout)
     }
 
-    /// Owner redeems the pool's residual reserves (liquidity provision) after resolution.
+    /// After resolution, the pool's remaining value goes back to whoever seeded the market.
+    /// Markets created before creators were recorded belong to the contract owner.
     pub fn redeem_pool(&mut self, market_id: u32) -> U128 {
-        self.assert_owner();
+        let creator = self.get_market_creator(market_id);
+        let caller = env::predecessor_account_id();
+        require!(caller == creator || caller == self.owner_id, "ERR_NOT_CREATOR");
         let m = self.market_mut(market_id);
         require!(m.status == MarketStatus::Resolved, "ERR_NOT_RESOLVED");
         let payout = payout_for(m.resolved.unwrap(), m.pool_yes, m.pool_no);
         m.pool_yes = 0;
         m.pool_no = 0;
         m.sets -= payout;
-        let owner = self.owner_id.clone();
-        self.accounts.get_mut(&owner).unwrap().balance += payout;
-        emit("redeem", json!({ "market_id": market_id, "account_id": owner, "payout": U128(payout), "pool": true }));
+        self.accounts.get_mut(&creator).unwrap().balance += payout;
+        emit("redeem", json!({ "market_id": market_id, "account_id": creator, "payout": U128(payout), "pool": true }));
         U128(payout)
+    }
+
+    /// Who seeded a market, and so receives its pool after resolution.
+    pub fn get_market_creator(&self, market_id: u32) -> AccountId {
+        env::storage_read(&creator_key(market_id))
+            .and_then(|b| String::from_utf8(b).ok())
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_else(|| self.owner_id.clone())
     }
 
     // ---------------- agents ----------------

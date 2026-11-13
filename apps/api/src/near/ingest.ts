@@ -184,7 +184,7 @@ export interface MarketMeta {
   resolutionCriteria: string;
 }
 
-/** Register a market created on-chain by the contract owner. */
+/** Register a market someone created on-chain, with the description they wrote off-chain. */
 export async function ingestMarketTx(db: DB, ctx: ChainCtx, txHash: string, signerId: string, meta: MarketMeta) {
   const tx = await fetchTx(ctx, txHash, signerId);
   const ev = tx.events.find((e) => e.event === "market_created");
@@ -201,8 +201,10 @@ export async function ingestMarketTx(db: DB, ctx: ChainCtx, txHash: string, sign
   const poolNo = big(d.pool_no, "pool_no");
   // initial probability implied by the on-chain pool
   const probPpm = (poolNo * 1_000_000n) / (poolYes + poolNo);
+  const wanted = String(d.slug);
+  const clash = await db.select({ id: markets.id }).from(markets).where(eq(markets.slug, wanted));
   const { market } = await createMarket(db, {
-    slug: String(d.slug),
+    slug: clash[0] ? `${wanted}-${Number(d.market_id)}` : wanted,
     title: String(d.question),
     subject: meta.subject,
     category: String(d.category),

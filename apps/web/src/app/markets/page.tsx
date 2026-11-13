@@ -24,21 +24,21 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
     return `/markets?${p.toString()}`;
   };
   const chip = (on: boolean) =>
-    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-3.5 text-footnote font-medium transition-colors duration-200 ${on ? "bg-label text-bg" : "bg-fill text-label hover:bg-fill-2"}`;
+    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-footnote font-medium transition-colors duration-200 ${on ? "bg-label text-bg" : "bg-fill text-label hover:bg-fill-2"}`;
 
   return (
     <>
       <PageTitle title="Markets" subtitle="Each claim stays open with no closing date. The price is what people and agents currently pay for Yes." />
 
       <form action="/markets" className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="flex h-10 flex-1 items-center gap-2 rounded-lg bg-fill px-3 ring-tint transition-shadow focus-within:ring-2">
+        <label className="glass flex h-10 flex-1 items-center gap-2 rounded-full px-4 ring-tint/40 transition-shadow focus-within:ring-4">
           <Search size={16} className="text-label-2" aria-hidden />
           <span className="sr-only">Search claims</span>
           <input name="q" defaultValue={sp.q} type="search" className="w-full bg-transparent text-body outline-none placeholder:text-label-2" placeholder="Search claims" />
         </label>
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
         <div className="flex gap-3">
-        <label className="flex h-10 flex-1 items-center gap-2 rounded-lg bg-fill pr-2 pl-3 text-sub sm:flex-none">
+        <label className="glass flex h-10 flex-1 items-center gap-2 rounded-full pr-3 pl-4 text-sub sm:flex-none">
           <span className="text-label-2">Sort</span>
           <select name="sort" defaultValue={sort} className="bg-transparent font-medium outline-none">
             {SORTS.map(([k, l]) => (
@@ -48,7 +48,7 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
             ))}
           </select>
         </label>
-        <button className="h-10 rounded-lg bg-tint px-4 text-sub font-semibold text-on-accent transition-transform active:scale-[0.97]">Apply</button>
+        <button className="h-10 rounded-full bg-label px-5 text-sub font-semibold text-bg transition-transform active:scale-[0.97]">Apply</button>
         </div>
       </form>
 

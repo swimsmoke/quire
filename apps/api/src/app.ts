@@ -1,6 +1,7 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 import type { DB } from "./db/client.js";
 import { bearer, sessionCodec, type Session } from "./auth/session.js";
@@ -24,6 +25,7 @@ declare module "fastify" {
     chainFetch?: typeof fetch;
     aiFetch?: typeof fetch;
     webFetch?: typeof fetch;
+    internalKey: string;
     requireSession: (req: FastifyRequest, reply: FastifyReply) => Promise<Session>;
   }
 }
@@ -58,7 +60,10 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean;
 
   app.setReplySerializer((p) => toJson(p));
   await app.register(cors, { origin: cfg.WEB_ORIGIN.split(","), credentials: false });
-  await app.register(rateLimit, { max: 240, timeWindow: "1 minute" });
+  // Background work (research, first articles) calls the API in-process; it carries a per-boot key and skips rate limits.
+  const internalKey = randomUUID();
+  app.decorate("internalKey", internalKey);
+  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", allowList: (req) => req.headers["x-quire-internal"] === internalKey });
 
   app.setErrorHandler((err, _req, reply) => {
     if (reply.sent) return;

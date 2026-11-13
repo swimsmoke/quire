@@ -8,7 +8,7 @@ const KEY = "quire.theme";
 const ORDER: Pref[] = ["system", "light", "dark"];
 
 /** Inline script run before paint so the page never flashes the wrong theme. */
-export const themeScript = `(function(){try{var p=localStorage.getItem('${KEY}')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.dataset.theme=d?'dark':'light';e.dataset.themePref=p;}catch(_){document.documentElement.dataset.theme='light'}})();`;
+export const themeScript = `(function(){try{var p=localStorage.getItem('${KEY}')||'dark';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.dataset.theme=d?'dark':'light';e.dataset.themePref=p;}catch(_){document.documentElement.dataset.theme='light'}})();`;
 
 function apply(pref: Pref, animate: boolean) {
   const el = document.documentElement;
@@ -22,10 +22,10 @@ function apply(pref: Pref, animate: boolean) {
 }
 
 export function ThemeToggle() {
-  const [pref, setPref] = useState<Pref>("system");
+  const [pref, setPref] = useState<Pref>("dark");
 
   useEffect(() => {
-    const p = (document.documentElement.dataset.themePref as Pref) || "system";
+    const p = (document.documentElement.dataset.themePref as Pref) || "dark";
     setPref(p);
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {

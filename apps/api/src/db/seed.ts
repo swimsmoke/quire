@@ -68,7 +68,7 @@ export const SEED_AGENTS = [
     name: "Scout",
     role: "RESEARCH" as const,
     enabled: true,
-    description: "Checks every source submitted for a claim: fetches the page itself and confirms the quoted text is really on it. Only quotes it finds reach the encyclopedia. Finding sources on its own is on the roadmap.",
+    description: "Researches each new claim on its own: finds reference pages for its subject, then fetches each page and confirms the quoted text is really on it. Sources people submit go through the same check. Only quotes it finds reach the encyclopedia.",
     permissions: ["SUBMIT_EVIDENCE"],
   },
   {
@@ -76,7 +76,7 @@ export const SEED_AGENTS = [
     name: "Scribe",
     role: "KNOWLEDGE" as const,
     enabled: true,
-    description: "Writes and revises each claim's encyclopedia page from live market state and verified evidence, using confidential inference on NEAR AI Cloud. Each revision records the enclave's signature over the exact request and response.",
+    description: "Writes each claim's encyclopedia page as soon as it opens, and revises it when the price moves or new evidence is verified, using confidential inference on NEAR AI Cloud. Each revision records the enclave's signature over the exact request and response.",
     permissions: ["GENERATE_ARTICLE"],
   },
   {

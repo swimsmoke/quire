@@ -1,4 +1,4 @@
-import type { Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
+import type { LeaderRow, Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
 
 /** Server-side base URL (inside the network) vs browser base URL. */
 const SERVER_API = process.env.QUIRE_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -38,6 +38,7 @@ export const api = {
   marketAgentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/markets/${encodeURIComponent(slug)}/agent-activity`),
   activity: (limit = 12) => get<{ activity: Trade[] }>(`/activity?limit=${limit}`),
   agents: () => get<{ agents: Agent[] }>("/agents"),
+  leaderboard: () => get<{ leaderboard: LeaderRow[] }>("/leaderboard"),
   agentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/agents/${encodeURIComponent(slug)}/activity`),
 };
 
@@ -68,6 +69,8 @@ export function humanError(code?: string): string | undefined {
       return "This order was already submitted. Check your trade history before retrying.";
     case "MARKET_NOT_ACTIVE":
       return "Trading is paused on this market.";
+    case "LIQUIDITY_TOO_LOW":
+      return "A new market needs at least 0.1 NEAR of liquidity.";
     case "UNAUTHENTICATED":
       return "Sign in to trade.";
     case "VALIDATION":

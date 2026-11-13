@@ -18,7 +18,7 @@ export function SessionControl() {
   if (me) {
     return (
       <>
-        <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-md pr-1 pl-3 text-sub transition-colors hover:bg-fill">
+        <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-full pr-1 pl-3 text-sub transition-colors hover:bg-fill">
           <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
           <span className="grid size-7 place-items-center rounded-full bg-tint text-footnote font-semibold text-on-accent" aria-hidden>
             {me.session.accountId.slice(0, 1).toUpperCase()}
@@ -67,7 +67,7 @@ export function SessionControl() {
               setOpen(true);
             }
           }}
-          className="h-8 rounded-md bg-tint px-4 text-footnote font-semibold text-on-accent transition-[transform,background-color] duration-200 hover:bg-tint-press active:scale-95"
+          className="h-8 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95"
         >
           Connect wallet
         </button>
@@ -81,7 +81,7 @@ export function SessionControl() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="h-8 rounded-md bg-tint px-4 text-footnote font-semibold text-on-accent transition-[transform,background-color] duration-200 hover:bg-tint-press active:scale-95">
+      <button onClick={() => setOpen(true)} className="h-8 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95">
         Sign in
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Sign in">

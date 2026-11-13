@@ -8,6 +8,36 @@ import { checkEvidence } from "../ai/evidence-check.js";
 import { confidentialChat, NearAiError } from "../ai/nearai.js";
 import { parseArticle, SYSTEM_PROMPT } from "../ai/article.js";
 import { pgErrorCode } from "../market/engine.js";
+import { findCandidates } from "../ai/research.js";
+
+const CATEGORIES = ["crypto", "ai", "near", "tech", "science", "sports", "politics", "economy", "culture", "other"] as const;
+const DraftSchema = z.object({
+  question: z.string().min(8).max(300),
+  subject: z.string().min(1).max(80),
+  category: z.enum(CATEGORIES).catch("other"),
+  description: z.string().min(1).max(600),
+  resolutionCriteria: z.string().min(1).max(600),
+});
+const DRAFT_PROMPT = `You help people phrase a claim for Quire, a market where people trade Yes or No on a claim that has no closing date.
+Given a rough question, reply with ONE JSON object and nothing else, with keys:
+- "question": the claim as a clear yes/no question, neutral, specific, under 140 characters. Do not add a deadline unless the user gave one.
+- "subject": the main thing the claim is about, as it would be titled in an encyclopedia (2 to 5 words).
+- "category": one of ${CATEGORIES.join(", ")}.
+- "description": one or two plain sentences saying what the claim means. No predictions.
+- "resolutionCriteria": one or two sentences saying what public, checkable event would make this resolve YES, and that it stays open until then.
+Do not state facts you are unsure of. Do not give an opinion on the answer.`;
+
+/** After a market is created or traded: let Scout research (first time only) and Scribe write if a revision is due. Never throws. */
+export async function runKnowledgePipeline(app: FastifyInstance, slug: string, opts: { research: boolean }) {
+  if (app.cfg.NODE_ENV === "test" || !app.cfg.NEAR_AI_API_KEY || app.cfg.NEAR_AI_API_KEY === "none") return;
+  try {
+    const headers = { "x-quire-internal": app.internalKey };
+    if (opts.research) await app.inject({ method: "POST", url: `/markets/${slug}/research`, headers });
+    await app.inject({ method: "POST", url: `/markets/${slug}/encyclopedia/generate`, headers });
+  } catch (e) {
+    app.log.warn({ err: e, slug }, "knowledge pipeline failed");
+  }
+}
 
 async function marketBySlug(app: FastifyInstance, slug: string) {
   const [row] = await app.db.select().from(markets).innerJoin(claims, eq(markets.claimId, claims.id)).where(eq(markets.slug, slug));
@@ -72,6 +102,49 @@ export async function scribeRoutes(app: FastifyInstance) {
       });
     }
     return reply.code(201).send({ evidence: ev, check: { status: check.status, detail: check.detail } });
+  });
+
+  /**
+   * Help someone turn a rough question into a well-formed claim. The model only drafts wording;
+   * the person reviews and edits everything before creating the market.
+   */
+  app.post("/ai/draft-claim", { config: { rateLimit: { max: 6, timeWindow: "1 minute" } } }, async (req, reply) => {
+    const { question } = z.object({ question: z.string().trim().min(8).max(300) }).parse(req.body);
+    const cfg = { baseUrl: app.cfg.NEAR_AI_BASE_URL, apiKey: app.cfg.NEAR_AI_API_KEY ?? "", model: app.cfg.NEAR_AI_MODEL, fetchFn: app.aiFetch };
+    try {
+      const inf = await confidentialChat(cfg, [
+        { role: "system", content: DRAFT_PROMPT },
+        { role: "user", content: question },
+      ]);
+      let text = inf.content.trim();
+      const fence = /^```(?:json)?\s*([\s\S]*?)\s*```$/.exec(text);
+      if (fence) text = fence[1]!;
+      const d = DraftSchema.parse(JSON.parse(text));
+      return { draft: d, model: inf.model };
+    } catch (e) {
+      if (e instanceof NearAiError) return reply.code(e.code === "NOT_CONFIGURED" ? 503 : 502).send({ error: e.code, message: e.message });
+      return reply.code(502).send({ error: "INVALID_OUTPUT", message: "The model could not draft this claim. Fill in the fields yourself, or rephrase the question." });
+    }
+  });
+
+  /** Scout researches a claim on its own: finds Wikipedia passages and submits them through the normal evidence check. */
+  app.post("/markets/:slug/research", { config: { rateLimit: { max: 4, timeWindow: "1 minute" } } }, async (req, reply) => {
+    const { slug } = z.object({ slug: z.string().max(80) }).parse(req.params);
+    const row = await marketBySlug(app, slug);
+    if (!row) return reply.code(404).send({ error: "MARKET_NOT_FOUND" });
+    const candidates = await findCandidates(row.claims.subject, app.webFetch ?? fetch);
+    let verified = 0;
+    const seen = new Set<string>();
+    for (const c of candidates) {
+      if (seen.has(c.url)) continue; // one quote per page is enough
+      const r = await app.inject({ method: "POST", url: `/markets/${slug}/evidence`, headers: { "x-quire-internal": app.internalKey }, payload: { url: c.url, excerpt: c.excerpt, stance: "CONTEXT", submittedBy: "Scout" } });
+      if (r.statusCode === 409) seen.add(c.url); // this page is already cited for the claim
+      if (r.statusCode === 201 && r.json().check.status === "EXCERPT_VERIFIED") {
+        verified++;
+        seen.add(c.url);
+      }
+    }
+    return { candidates: candidates.length, verified };
   });
 
   /**

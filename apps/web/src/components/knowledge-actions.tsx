@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, clientRequest } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -124,5 +124,29 @@ export function AddEvidence({ slug }: { slug: string }) {
       )}
       <p className="text-footnote text-label-3">Quire fetches the page itself. Only quotes found word for word are passed to the encyclopedia writer. Pages that need JavaScript or block automated readers can&apos;t be checked.</p>
     </form>
+  );
+}
+
+/** Shown on a claim nobody has written about yet: Scout and Scribe start on their own, so keep the page fresh until the first revision lands. */
+export function WritingNotice({ fresh }: { fresh: boolean }) {
+  const router = useRouter();
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    if (!fresh || waited > 24) return;
+    const t = setTimeout(() => {
+      router.refresh();
+      setWaited((w) => w + 1);
+    }, 7000);
+    return () => clearTimeout(t);
+  }, [fresh, waited, router]);
+  if (!fresh) return null;
+  return (
+    <p role="status" className="mb-4 flex items-center gap-2.5 text-sub text-label-2">
+      <span className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-tint opacity-60 motion-reduce:animate-none" />
+        <span className="relative inline-flex size-2 rounded-full bg-tint" />
+      </span>
+      {waited > 24 ? "Still waiting on the first revision. You can ask Scribe below." : "Scout is gathering sources and Scribe is writing this page. It usually appears within a minute."}
+    </p>
   );
 }

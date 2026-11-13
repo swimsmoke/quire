@@ -13,6 +13,7 @@ import {
   evidence,
   markets,
   trades,
+  positions,
 } from "../db/schema.js";
 
 async function marketBySlug(app: FastifyInstance, slug: string) {
@@ -125,6 +126,34 @@ export async function knowledgeRoutes(app: FastifyInstance) {
       .orderBy(desc(agentActivities.createdAt))
       .limit(30);
     return { activity: list.map((r) => ({ ...r.a, agentName: r.agentName, agentSlug: r.agentSlug, role: r.role })) };
+  });
+
+  /** Traders ranked by profit: realised gains plus the current value of open positions, minus what they paid. */
+  app.get("/leaderboard", async () => {
+    const mode = app.cfg.QUIRE_EXECUTION_MODE;
+    const rows = await app.db
+      .select({ p: positions, priceYesPpm: markets.priceYesPpm })
+      .from(positions)
+      .innerJoin(markets, eq(positions.marketId, markets.id))
+      .where(eq(markets.executionMode, mode));
+    const counts = await app.db.execute<{ trader_account: string; trades: number; volume: string; markets: number }>(sql`
+      select t.trader_account, count(*)::int as trades, coalesce(sum(t.collateral),0)::text as volume, count(distinct t.market_id)::int as markets
+      from trades t where t.execution_mode = ${mode} group by t.trader_account`);
+    const byAcc = new Map(counts.rows.map((c) => [c.trader_account, c]));
+    const agg = new Map<string, { pnl: bigint; actorKind: string }>();
+    for (const { p, priceYesPpm } of rows) {
+      if (!byAcc.has(p.traderAccount)) continue; // liquidity-only accounts are not traders
+      const mark = (p.yesShares * BigInt(priceYesPpm) + p.noShares * BigInt(1_000_000 - priceYesPpm)) / 1_000_000n;
+      const pnl = BigInt(p.realizedPnl) + mark - p.yesCost - p.noCost;
+      const cur = agg.get(p.traderAccount) ?? { pnl: 0n, actorKind: p.actorKind };
+      cur.pnl += pnl;
+      agg.set(p.traderAccount, cur);
+    }
+    const list = [...agg.entries()]
+      .map(([account, v]) => ({ account, actorKind: v.actorKind, pnl: v.pnl.toString(), trades: byAcc.get(account)!.trades, markets: byAcc.get(account)!.markets, volume: byAcc.get(account)!.volume }))
+      .sort((a, b) => (BigInt(b.pnl) > BigInt(a.pnl) ? 1 : BigInt(b.pnl) < BigInt(a.pnl) ? -1 : b.trades - a.trades))
+      .slice(0, 50);
+    return { leaderboard: list };
   });
 
   app.get("/agents", async () => {

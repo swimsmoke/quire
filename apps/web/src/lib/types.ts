@@ -170,3 +170,20 @@ export interface Health {
   network: "testnet" | "mainnet";
   integrations: Record<string, string | boolean | null>;
 }
+
+export interface LeaderRow {
+  account: string;
+  actorKind: "HUMAN" | "AGENT";
+  pnl: string;
+  trades: number;
+  markets: number;
+  volume: string;
+}
+
+export interface ClaimDraft {
+  question: string;
+  subject: string;
+  category: string;
+  description: string;
+  resolutionCriteria: string;
+}

@@ -78,4 +78,5 @@ strips markup, and marks the quote found or not found. Only found quotes are giv
 - Slippage bound (`min_out`) and single-use client order ids on every trade.
 - Agents (planned): own account, function-call key only, owner-funded balance, on-chain `enabled` / `max_trade` / `spend_limit`, no withdrawals. Enforced and unit-tested in the contract; no agent runs yet.
 - Open endpoints (evidence submission, generate) are rate-limited; generation is bounded by the update policy.
-- Centralised parts: the owner creates markets, sets caps, can pause, and is the resolver (with a challenge window). The API is a mirror, not a custodian.
+- Market creation is open: any registered account seeds a market from its own balance (minimum 0.1 NEAR) and receives the pool back after resolution.
+- Centralised parts: the owner sets caps, can pause, and is the resolver (with a challenge window). The API is a mirror, not a custodian.

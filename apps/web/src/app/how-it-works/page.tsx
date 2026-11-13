@@ -21,6 +21,13 @@ const SECTIONS: { h: string; p: string[] }[] = [
     ],
   },
   {
+    h: "Anyone can ask",
+    p: [
+      "Start with a question. Quire first looks for a market that already covers it, so you see what people currently believe. If there isn't one, an AI on NEAR AI Cloud drafts the claim for you: a clear yes or no question, what it means and what would make it Yes. You check the wording and open the market from your own wallet with as little as 0.1 NEAR of liquidity.",
+      "That liquidity sets the opening price and comes back to you, along with your share of the pool, when the claim resolves.",
+    ],
+  },
+  {
     h: "Trading happens on NEAR, from your own wallet",
     p: [
       "Quire's markets live in a smart contract on NEAR. You deposit NEAR into it from your wallet, and every deposit, trade and withdrawal is a transaction your wallet asks you to approve. Withdrawals stay open even if trading is paused, and nothing in the contract lets its owner move your balance.",
@@ -30,7 +37,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
   {
     h: "Evidence is checked by retrieval, not by opinion",
     p: [
-      "Anyone can submit a source with a quoted sentence. Scout, Quire's evidence checker, fetches the page itself, records when and what it retrieved, and marks whether the quote actually appears on the page. A model calling a source credible never counts as verification.",
+      "When a claim opens, Scout looks up reference pages for its subject on its own. Anyone can add more sources with a quoted sentence. Either way, Scout fetches the page itself, records when and what it retrieved, and marks whether the quote actually appears on the page. A model calling a source credible never counts as verification.",
       "Only quotes found on the page are passed to the encyclopedia writer.",
     ],
   },
@@ -38,7 +45,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     h: "Confidential AI writes the encyclopedia",
     p: [
       "Each claim has a public page written by Scribe on NEAR AI Cloud, where inference runs inside hardware enclaves. Scribe receives the live probability and its history, trading activity, the verified evidence and the previous revision, and must return a fixed structure that Quire validates. It can cite only evidence Quire actually retrieved; any other citation is dropped.",
-      "Pages are revised when something material changes, such as a price move of several points or newly verified evidence, not on every trade. Every revision is kept.",
+      "The first page is written automatically when a claim opens, so whoever asked doesn't need to know the subject. Pages are revised when something material changes, such as a price move of several points or newly verified evidence, not on every trade. Every revision is kept.",
       "Each revision records hashes of the exact request and response, and Quire checks the enclave's signature over them. That shows where and how the text was generated. It does not prove the text is correct, and the page says so.",
     ],
   },
@@ -47,7 +54,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     p: [
       "Analysis and trading agents: the contract already enforces per-agent limits (an on/off switch, a largest trade, a total spend, and no withdrawals), but no trading agent runs in this build.",
       "Cross-chain funding: NEAR Intents to swap an asset from another chain into NEAR, and Chain Signatures to sign that deposit from a NEAR account. Neither is connected yet.",
-      "Automatic source discovery for Scout, and an attested multi-model panel for the rare cases where a claim needs to be resolved.",
+      "Wider source discovery for Scout beyond reference pages, and an attested multi-model panel for the rare cases where a claim needs to be resolved.",
     ],
   },
 ];

@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { PriceChart } from "@/components/price-chart";
 import { MarketList } from "@/components/market-list";
 import { TradeTape } from "@/components/trade-tape";
 import { SectionHeader, Steps } from "@/components/section";
-import { buttonPrimary } from "@/components/ui";
 import { pct } from "@/lib/format";
 import { Wordmark } from "@/components/chrome";
+import { AskBox } from "@/components/ask-box";
+import { ClaimTicker } from "@/components/ticker";
 
 export default async function Home() {
   const [{ markets }, { activity }] = await Promise.all([
@@ -22,28 +22,23 @@ export default async function Home() {
 
   return (
     <>
-      <section className="pt-14 pb-12 md:pt-24 md:pb-16">
+      <section className="flex flex-col items-center pt-16 pb-14 text-center md:pt-28 md:pb-20">
         <h1>
-          <Wordmark className="block text-[5.5rem] md:text-[9rem]" />
+          <Wordmark className="graded block px-4 text-[6rem] md:text-[10.5rem]" />
         </h1>
-        <p className="mt-2 max-w-[22ch] font-serif text-title2 leading-tight text-label-2 md:text-[2.25rem]">
-          Truth, priced by the market. Written by agents.
+        <p className="mt-1 max-w-[30ch] font-serif text-title2 leading-tight text-label-2 md:text-[2.25rem]">Ask anything. Let the market answer.</p>
+        <p className="mt-5 max-w-[56ch] text-body text-label-2">
+          Every question becomes a market on NEAR that never closes. People trade Yes or No, and confidential AI keeps an encyclopedia page that follows the price and the evidence.
         </p>
-        <p className="mt-6 max-w-[54ch] text-body text-label-2">
-          Every claim is a market that never closes. People trade on it on NEAR, and confidential AI writes its encyclopedia page from the live price and checked evidence.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center gap-5">
-          <Link href="/markets" className={buttonPrimary}>
-            Explore markets
-          </Link>
-          <Link href="/how-it-works" className="inline-flex items-center gap-0.5 text-sub text-tint hover:underline">
-            How it works <ChevronRight size={16} aria-hidden />
-          </Link>
+        <div className="mt-9 flex w-full justify-center">
+          <AskBox />
         </div>
       </section>
 
+      <ClaimTicker markets={markets} />
+
       {featured && (
-        <section aria-labelledby="featured-h" className="border-t hairline pt-8 pb-14">
+        <section aria-labelledby="featured-h" className="pt-12 pb-14">
           <p className="text-footnote font-medium text-label-2">{featured.tradeCount > 0 ? "Most traded" : "Featured claim"}</p>
           <Link href={`/markets/${featured.slug}`} id="featured-h" className="mt-1 block max-w-[40ch] text-title3 font-semibold hover:text-tint">
             {featured.question}
@@ -90,7 +85,7 @@ export default async function Home() {
             ))}
           </ul>
         ) : (
-          <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Open a claim and ask Scribe to write its first revision on NEAR AI Cloud.</p>
+          <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Scribe writes one on NEAR AI Cloud as soon as a new claim opens.</p>
         )}
       </section>
     </>

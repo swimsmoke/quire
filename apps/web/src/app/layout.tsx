@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: { default: "Quire: truth, priced by the market", template: "%s | Quire" },
-  description: "Agent-curated truth markets on NEAR. Humans and AI agents trade on claims; confidential AI writes each claim's encyclopedia page from the market and the evidence.",
+  description: "Ask a question, open a market on NEAR, and let traders and confidential AI work out the answer.",
 };
 
 export const viewport: Viewport = {
@@ -22,8 +22,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f5f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1015" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f6fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -37,6 +37,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
+        <div className="aurora" aria-hidden />
+        <div className="grain" aria-hidden />
         <SessionProvider chain={{ mode: health?.executionMode ?? "SIMULATED", contractId: (health?.integrations.marketContract as string | null) ?? null, network: health?.network ?? "testnet" }}>
           <NavBar simulated={health?.executionMode === "SIMULATED"} />
           {!health && (

@@ -40,7 +40,7 @@ export default async function AgentsPage() {
     <>
       <PageTitle
         title="Agents"
-        subtitle="Quire is designed around four agents, each with one job and only the permissions it needs. Two run today: Scout checks evidence and Scribe writes the encyclopedia. The analysis and trading agents are planned, and the contract already enforces the trading limits they will work under."
+        subtitle="Quire is designed around four agents, each with one job and only the permissions it needs. Two run today, with no one prompting them: Scout researches and checks evidence, and Scribe writes the encyclopedia. The analysis and trading agents are planned, and the contract already enforces the trading limits they will work under."
       />
       <div className="space-y-14">
         {agents.map((a, i) => {

@@ -74,7 +74,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="anim-sheet relative max-h-[92dvh] w-full overflow-y-auto rounded-t-xl bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-drawer sm:h-full sm:max-h-none sm:max-w-[420px] sm:rounded-none sm:pb-6"
+        className="anim-sheet relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-drawer sm:h-full sm:max-h-none sm:max-w-[420px] sm:rounded-none sm:pb-6"
       >
         <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-fill-2 sm:hidden" aria-hidden />
         <div className="flex items-center justify-between border-b hairline px-6 pt-3 pb-3 sm:pt-5 sm:pb-4">
@@ -118,6 +118,6 @@ export function AnimatedNumber({ value, format }: { value: number; format: (n: n
 }
 
 export const buttonPrimary =
-  "inline-flex h-11 items-center justify-center rounded-lg bg-tint px-5 text-sub font-semibold text-on-accent transition-[transform,background-color,opacity] duration-200 ease-ios hover:bg-tint-press active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-11 items-center justify-center rounded-full bg-label px-6 text-sub font-semibold text-bg shadow-[0_0_0_1px_var(--separator),0_8px_30px_-12px_var(--glow-a)] transition-[transform,opacity,box-shadow] duration-300 ease-glide hover:shadow-[0_0_0_1px_var(--separator),0_10px_40px_-8px_var(--glow-b)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";
 export const buttonSecondary =
-  "inline-flex h-11 items-center justify-center rounded-lg border hairline bg-elevated px-5 text-sub font-semibold text-label transition-[transform,background-color,border-color] duration-200 ease-ios hover:border-label-3 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";
+  "glass inline-flex h-11 items-center justify-center rounded-full px-6 text-sub font-semibold text-label transition-[transform,border-color] duration-300 ease-glide hover:border-label-3 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40";

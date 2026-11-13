@@ -7,7 +7,9 @@ import { SessionControl } from "./session-control";
 import { SimulatedBadge } from "./mode";
 
 const NAV = [
+  { href: "/ask", label: "Ask" },
   { href: "/markets", label: "Markets" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/agents", label: "Agents" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/how-it-works", label: "How it works" },
@@ -42,12 +44,12 @@ export function NavBar({ simulated }: { simulated: boolean }) {
     });
 
   return (
-    <header className="sticky top-0 z-40 border-b hairline bg-chrome backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b hairline bg-chrome backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-5">
         <Link href="/" aria-label="Quire home" className="-mt-1 transition-opacity hover:opacity-80">
           <Wordmark className="text-[2.35rem]" />
         </Link>
-        <nav aria-label="Main" className="hidden h-16 items-end gap-7 md:flex">
+        <nav aria-label="Main" className="hidden h-16 items-end gap-6 lg:gap-7 md:flex">
           {links("pb-[18px]")}
         </nav>
         <div className="ml-auto flex items-center gap-2">

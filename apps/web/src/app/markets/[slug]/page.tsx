@@ -7,7 +7,7 @@ import { TradeTicket } from "@/components/trade-ticket";
 import { TradeTape } from "@/components/trade-tape";
 import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
-import { AddEvidence, GenerateArticle } from "@/components/knowledge-actions";
+import { AddEvidence, GenerateArticle, WritingNotice } from "@/components/knowledge-actions";
 import { ChangePill } from "@/components/market-list";
 import { SectionHeader } from "@/components/section";
 import { ago, dateTime, pct, fmtNear } from "@/lib/format";
@@ -19,8 +19,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: d?.claim.title ?? "Claim" };
 }
 
-export default async function ClaimPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ClaimPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ new?: string }> }) {
   const { slug } = await params;
+  const { new: isNew } = await searchParams;
   let detail;
   try {
     detail = await api.market(slug);
@@ -90,6 +91,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
                 {ency.revisions.length} {ency.revisions.length === 1 ? "revision" : "revisions"}
               </span>
             </div>
+            <WritingNotice fresh={!ency.current && (isNew === "1" || Date.now() - new Date(m.createdAt).getTime() < 10 * 60_000)} />
             <EncyclopediaArticle data={ency} evidence={ev.evidence} currentPpm={m.probabilityYesPpm} />
             <GenerateArticle slug={m.slug} hasArticle={!!ency.current} />
           </section>

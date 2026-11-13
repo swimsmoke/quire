@@ -2,7 +2,13 @@ import type { FastifyInstance } from "fastify";
 import { and, asc, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BPS, parseUnits, type Outcome } from "@quire/shared";
-import { claims, marketSnapshots, markets, positions, trades } from "../db/schema.js";
+import { accountBalances, claims, marketSnapshots, markets, positions, trades } from "../db/schema.js";
+import { createMarket } from "../market/create.js";
+import { runKnowledgePipeline } from "./scribe.js";
+
+const MIN_MARKET_LIQUIDITY = 100_000n; // 0.1 NEAR, same floor as the contract
+const STOP = new Set(["will", "the", "and", "for", "that", "this", "with", "ever", "does", "have", "has", "are", "can", "what", "when", "who", "how", "above", "below", "than", "reach", "from", "into", "going", "its", "was", "been", "being", "any", "more", "least", "before", "after"]);
+const keywords = (q: string) => [...new Set(q.toLowerCase().split(/[^a-z0-9$]+/).filter((w) => w.length >= 3 && !STOP.has(w)))].slice(0, 8);
 import { executeSimulatedTrade, quote } from "../market/engine.js";
 
 const OutcomeZ = z.enum(["YES", "NO"]);
@@ -90,13 +96,65 @@ export async function marketRoutes(app: FastifyInstance) {
       .parse(req.query);
     const where = and(
       q.category ? eq(claims.category, q.category) : undefined,
-      q.q ? or(ilike(claims.title, `%${q.q}%`), ilike(claims.subject, `%${q.q}%`)) : undefined,
+      q.q ? or(ilike(claims.title, `%${q.q}%`), ilike(claims.subject, `%${q.q}%`), ...keywords(q.q).flatMap((k) => [ilike(claims.title, `%${k}%`), ilike(claims.subject, `%${k}%`)])) : undefined,
     );
     const order =
       q.sort === "volume" ? desc(markets.volume) : q.sort === "probability" ? desc(markets.priceYesPpm) : q.sort === "new" ? desc(markets.createdAt) : q.sort === "liquidity" ? desc(markets.sets) : desc(markets.updatedAt);
     const rows = await app.db.select().from(markets).innerJoin(claims, eq(markets.claimId, claims.id)).where(where).orderBy(order).limit(100);
     const stats = await statsByMarket(app);
-    return { markets: rows.map((r) => present(r.markets, r.claims, stats.get(r.markets.id))) };
+    const out = rows.map((r) => present(r.markets, r.claims, stats.get(r.markets.id)));
+    if (q.q) {
+      // closest wording first, so someone asking a question sees the claim that already covers it
+      const ks = keywords(q.q);
+      const score = (m: { question: string }) => ks.filter((k) => m.question.toLowerCase().includes(k)).length;
+      out.sort((a, b) => score(b) - score(a));
+    }
+    return { markets: out };
+  });
+
+  /** Simulated mode only: open a market from your own practice balance (on-chain mode does this through the contract). */
+  app.post("/markets", { config: { rateLimit: { max: 6, timeWindow: "1 minute" } } }, async (req, reply) => {
+    const s = await app.requireSession(req, reply);
+    if (app.cfg.QUIRE_EXECUTION_MODE !== "SIMULATED") return reply.code(409).send({ error: "ONCHAIN_MODE", message: "On-chain markets are created through the contract" });
+    const b = z
+      .object({
+        slug: z.string().regex(/^[a-z0-9-]{3,80}$/),
+        question: z.string().trim().min(8).max(300),
+        subject: z.string().trim().min(1).max(80),
+        category: z.string().trim().min(1).max(32),
+        description: z.string().trim().min(1).max(600),
+        resolutionCriteria: z.string().trim().min(1).max(600),
+        initialProbPpm: z.number().int().min(10_000).max(990_000),
+        liquidity: z.string(),
+      })
+      .parse(req.body);
+    const liquidity = parseUnits(b.liquidity);
+    if (liquidity < MIN_MARKET_LIQUIDITY) return reply.code(422).send({ error: "LIQUIDITY_TOO_LOW", message: "A market needs at least 0.1 NEAR of liquidity" });
+    const clash = await app.db.select({ id: markets.id }).from(markets).where(eq(markets.slug, b.slug));
+    const slug = clash[0] ? `${b.slug}-${Date.now().toString(36).slice(-4)}` : b.slug;
+    const key = and(eq(accountBalances.traderAccount, s.accountId), eq(accountBalances.executionMode, "SIMULATED"));
+    const paid = await app.db.transaction(async (tx) => {
+      const [bal] = await tx.select().from(accountBalances).where(key).for("update");
+      if (!bal || bal.available < liquidity) return false;
+      await tx.update(accountBalances).set({ available: bal.available - liquidity, updatedAt: new Date() }).where(key);
+      return true;
+    });
+    if (!paid) return reply.code(422).send({ error: "INSUFFICIENT_BALANCE" });
+    const { market } = await createMarket(app.db, {
+      slug,
+      title: b.question,
+      subject: b.subject,
+      category: b.category.toLowerCase(),
+      description: b.description,
+      resolutionCriteria: b.resolutionCriteria,
+      initialProbPpm: BigInt(b.initialProbPpm),
+      liquidity,
+      feeBps: 100,
+      lpAccount: s.accountId,
+      executionMode: "SIMULATED",
+    });
+    void runKnowledgePipeline(app, market.slug, { research: true });
+    return reply.code(201).send({ slug: market.slug });
   });
 
   app.get("/markets/:slug", async (req, reply) => {

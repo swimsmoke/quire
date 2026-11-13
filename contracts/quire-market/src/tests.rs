@@ -246,11 +246,41 @@ fn first_deposit_must_exceed_registration_cost() {
 }
 
 #[test]
-#[should_panic(expected = "ERR_NOT_OWNER")]
-fn only_owner_creates_markets() {
+fn anyone_registered_can_create_a_market_from_their_own_balance() {
     let mut c = setup();
     as_view(alice());
-    c.create_market("x".into(), "x?".into(), "c".into(), U128(500_000), U128(10 * Q), 100);
+    let id = c.create_market("alice-q".into(), "Will it rain?".into(), "other".into(), U128(700_000), U128(10 * Q), 100);
+    assert_eq!(id, 1);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0 <= 990 * Q, true);
+    // leftover shares from the uneven seed belong to the creator, not the contract owner
+    assert!(c.get_position(1, alice()).yes.0 > 0);
+    assert_eq!(c.get_position(1, owner()).yes.0, 0);
+    let m = c.get_market(1).unwrap();
+    assert_eq!(m.pool_no.0, m.sets.0);
+}
+
+#[test]
+#[should_panic(expected = "ERR_LIQUIDITY_TOO_LOW")]
+fn market_needs_a_minimum_seed() {
+    let mut c = setup();
+    as_view(alice());
+    c.create_market("x".into(), "x?".into(), "c".into(), U128(500_000), U128(MIN_MARKET_LIQUIDITY - 1), 100);
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_REGISTERED")]
+fn unregistered_account_cannot_create_a_market() {
+    let mut c = setup();
+    as_view("stranger.testnet".parse().unwrap());
+    c.create_market("x".into(), "x?".into(), "c".into(), U128(500_000), U128(Q), 100);
+}
+
+#[test]
+#[should_panic(expected = "ERR_INSUFFICIENT_BALANCE")]
+fn creator_cannot_seed_more_than_they_hold() {
+    let mut c = setup();
+    as_view(alice());
+    c.create_market("x".into(), "x?".into(), "c".into(), U128(500_000), U128(1_001 * Q), 100);
 }
 
 // ---------- agents ----------
@@ -474,4 +504,36 @@ fn only_owner_sets_caps() {
     let mut c = setup();
     as_view(alice());
     c.set_caps(U128(1), U128(1));
+}
+
+#[test]
+fn pool_goes_back_to_the_market_creator() {
+    let mut c = setup();
+    as_view(alice());
+    let id = c.create_market("alice-q".into(), "Will it rain?".into(), "other".into(), U128(500_000), U128(10 * Q), 100);
+    assert_eq!(c.get_market_creator(id), alice());
+    assert_eq!(c.get_market_creator(0), owner()); // seeded by the owner in setup
+    as_user(bob());
+    c.buy(id, Outcome::Yes, U128(5 * Q), U128(1), None);
+    as_view(owner());
+    c.propose_resolution(id, Resolution::No, String::new());
+    ctx(owner(), NearToken::from_yoctonear(0), 5_000);
+    c.finalize_resolution(id);
+    let before = c.get_account(alice()).unwrap().balance.0;
+    as_view(alice());
+    let paid = c.redeem_pool(id).0;
+    assert!(paid > 0);
+    assert_eq!(c.get_account(alice()).unwrap().balance.0, before + paid);
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_CREATOR")]
+fn strangers_cannot_take_a_pool() {
+    let mut c = setup();
+    as_view(owner());
+    c.propose_resolution(0, Resolution::No, String::new());
+    ctx(owner(), NearToken::from_yoctonear(0), 5_000);
+    c.finalize_resolution(0);
+    as_view(bob());
+    c.redeem_pool(0);
 }

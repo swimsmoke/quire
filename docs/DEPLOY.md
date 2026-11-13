@@ -50,6 +50,6 @@ its key as `QUIRE_CONTRACT_PRIVATE_KEY` instead.
 
 ## Trust assumptions (centralised parts)
 
-- The owner creates markets and is the resolver; resolution has a challenge window during which the owner can cancel.
+- Anyone can create a market; the owner is the resolver, and resolution has a challenge window during which the owner can cancel.
 - The owner can change the caps and pause trading.
 - The API/indexer mirrors chain state for speed; the contract is the source of truth for balances.

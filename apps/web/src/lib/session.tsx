@@ -210,13 +210,16 @@ const CHAIN_ERRORS: Record<string, string> = {
   ERR_SLIPPAGE: "The price moved past your slippage limit. Get a new quote and try again.",
   ERR_INSUFFICIENT_BALANCE: "Your Quire balance is too low. Deposit NEAR first.",
   ERR_INSUFFICIENT_SHARES: "You don't hold that many shares in this outcome.",
-  ERR_NOT_REGISTERED: "Deposit NEAR into Quire before trading.",
+  ERR_NOT_REGISTERED: "Deposit NEAR into Quire first.",
   ERR_ACCOUNT_CAP: "That deposit would exceed the per-account safety cap.",
   ERR_TVL_CAP: "Quire's total safety cap has been reached, so deposits are closed for now.",
   ERR_DEPOSIT_TOO_SMALL: "The first deposit must be larger than the 0.003 NEAR registration cost.",
   ERR_MARKET_NOT_ACTIVE: "Trading is paused on this market.",
   ERR_PAUSED: "Trading is paused.",
   ERR_NOT_OWNER: "Only the contract owner can do that.",
+  ERR_LIQUIDITY_TOO_LOW: "A new market needs at least 0.1 NEAR of liquidity.",
+  ERR_NOT_CREATOR: "Only the person who created this market can do that.",
+  ERR_BAD_SLUG: "The market's web address is too long. Shorten the question.",
   ERR_DUPLICATE_ORDER: "This order was already submitted.",
 };
 
