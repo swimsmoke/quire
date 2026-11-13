@@ -10,6 +10,18 @@ Built at NEAR HACKATHON (November 2026). Runs on testnet; the contract is unaudi
 - Contract: [`hardsealowner.testnet`](https://testnet.nearblocks.io/address/hardsealowner.testnet)
 - Tracks: Open Innovation, Privacy & Private AI
 
+![Quire's home page: ask a yes or no question](docs/screenshots/home.jpg)
+
+## Screens
+
+| | |
+|---|---|
+| ![Ask page finding an existing market](docs/screenshots/ask.jpg)<br>**Ask.** Existing markets show up as you type; if none fits, AI drafts a new one. | ![A market with its chart and trade panel](docs/screenshots/market.jpg)<br>**Trade.** Buy Yes or No; every trade moves the price. |
+| ![A trader's profile with profit chart and positions](docs/screenshots/profile.jpg)<br>**Profiles.** Profit over time, positions, trades and markets opened. | ![Leaderboard ranked by profit](docs/screenshots/leaderboard.jpg)<br>**Leaderboard.** Traders ranked by profit across every claim. |
+| ![Slide-out menu with account and links](docs/screenshots/menu.jpg)<br>**Menu.** Account, profile, leaderboard and cross-chain funding. | ![Home and a market on a phone](docs/screenshots/mobile.jpg)<br>**Phone.** Same app with a bottom tab bar. |
+
+These were captured from a local run in practice mode, so records carry a "Simulated" tag. On the live site they show NEAR testnet.
+
 ## Try it
 
 **On the live site**
