@@ -13,8 +13,11 @@ import { themeScript } from "@/components/theme-toggle";
 import { api } from "@/lib/api";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://quire-gamma.vercel.app"),
   title: { default: "Quire: truth, priced by the market", template: "%s | Quire" },
   description: "Ask a question, open a market on NEAR, and let traders and confidential AI work out the answer.",
+  openGraph: { title: "Quire: ask anything, let the market answer", description: "Truth markets and a confidential-AI encyclopedia on NEAR.", siteName: "Quire", type: "website" },
+  twitter: { card: "summary_large_image", title: "Quire: ask anything, let the market answer", description: "Truth markets and a confidential-AI encyclopedia on NEAR." },
 };
 
 export const viewport: Viewport = {

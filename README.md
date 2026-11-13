@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/quire-mark-on-dark.svg">
+    <img src="docs/brand/quire-mark-on-light.svg" width="104" alt="Quire logo: a Q drawn as a Yes/No ring">
+  </picture>
+</p>
+
 # Quire
 
 **Ask anything. Let the market answer.**
