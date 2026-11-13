@@ -30,7 +30,9 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
     throw e;
   }
   const { market: m, claim, related } = detail;
-  const [history, tape, ency, ev, agentAct] = await Promise.all([api.history(slug), api.trades(slug, 25), api.encyclopedia(slug), api.evidence(slug), api.marketAgentActivity(slug)]);
+  const [history, tape, ency, ev, agentAct, health] = await Promise.all([api.history(slug), api.trades(slug, 25), api.encyclopedia(slug), api.evidence(slug), api.marketAgentActivity(slug), api.health().catch(() => null)]);
+  // the background writer only runs when NEAR AI Cloud is configured on the API
+  const aiWriting = health?.integrations.nearAiCloud === "configured";
   const asOf = Date.now();
 
   return (
@@ -91,7 +93,7 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
                 {ency.revisions.length} {ency.revisions.length === 1 ? "revision" : "revisions"}
               </span>
             </div>
-            <WritingNotice fresh={!ency.current && (isNew === "1" || Date.now() - new Date(m.createdAt).getTime() < 10 * 60_000)} />
+            <WritingNotice fresh={aiWriting && !ency.current && (isNew === "1" || Date.now() - new Date(m.createdAt).getTime() < 10 * 60_000)} />
             <EncyclopediaArticle data={ency} evidence={ev.evidence} currentPpm={m.probabilityYesPpm} />
             <GenerateArticle slug={m.slug} hasArticle={!!ency.current} />
           </section>

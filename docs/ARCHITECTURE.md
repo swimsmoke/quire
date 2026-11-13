@@ -1,6 +1,6 @@
 # Quire — Architecture & Technical Decisions
 
-_Last updated 2026-11-12. Describes what is built; planned parts are marked as planned._
+_Last updated 2026-11-13. Describes what is built; planned parts are marked as planned._
 
 ## 1. Market maker: FPMM (chosen) vs LMSR vs others
 
@@ -30,7 +30,9 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 - *Liquidity* — collateral backing (`sets`).
 - *Volume* — gross collateral traded.
 
-**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. A resolver proposes, a challenge window must elapse, then anyone finalizes. INVALID pays 0.5 per share (solv## 2. NEAR components in use
+**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. A resolver proposes, a challenge window must elapse, then anyone finalizes. INVALID pays 0.5 per share (solvent, because each Yes+No pair holds exactly 1 NEAR). After resolution the pool's remaining value returns to whoever seeded the market.
+
+## 2. NEAR components in use
 
 | Component | Role in Quire | Status |
 |---|---|---|
@@ -69,10 +71,24 @@ Amounts are kept in micro-NEAR units inside the contract, so the integer FPMM ma
 4. Citations that are not provided evidence keys are dropped and reported.
 5. The revision is stored next to earlier ones with the inference record (hashes, signature, signer, checks).
 
-Evidence: a person submits a URL and a quote. The server fetches the page (https only, public hosts only, size and time limits),
-strips markup, and marks the quote found or not found. Only found quotes are given to the model.
+Evidence: a person submits a URL and a quote, or Scout finds one itself. When a claim opens, Scout searches Wikipedia for the
+claim's subject and submits the opening sentences of the best matches. Either way the server fetches the page (https only,
+public hosts only, size and time limits), strips markup, and marks the quote found or not found. Only found quotes are given to the model.
 
-## 6. Security posture
+Automatic runs: when a market is created, Scout researches it and Scribe writes the first revision with no one asking. After each
+trade Scribe is asked again, and the update policy above decides whether a new revision is due. These run in the background
+inside the API and skip its rate limits through a per-boot internal key.
+
+## 6. Asking, profiles and the leaderboard
+
+- **Ask**: the search matches on keywords as well as the full text, so differently worded questions find an existing claim.
+  For a new one, `POST /ai/draft-claim` asks NEAR AI Cloud for a question, subject, category, description and resolution rule
+  (zod-validated JSON). The person edits it and creates the market from their own wallet.
+- **Profit**: one function (`apps/api/src/market/pnl.ts`) replays an account's trades: cash out for buys, cash in for sales,
+  plus shares still held at today's Yes/No price. Liquidity a creator seeds is not trading and is left out. The leaderboard,
+  profile totals and the profit chart all use it, so they always agree.
+
+## 7. Security posture
 
 - Human trades and withdrawals require 1 yoctoNEAR, which forces a full-access-key wallet confirmation.
 - Slippage bound (`min_out`) and single-use client order ids on every trade.

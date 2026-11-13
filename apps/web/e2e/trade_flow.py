@@ -26,16 +26,18 @@ with sync_playwright() as p:
     expect(pg.get_by_text("You receive").first).to_be_visible(timeout=5000)
     pg.get_by_role("button", name="Review buy").click()
     pg.get_by_role("button", name="Confirm buy").click()
-    status = pg.get_by_role("status"); expect(status).to_contain_text("Bought", timeout=8000)
+    status = pg.get_by_role("status").filter(has_text="Bought"); expect(status).to_be_visible(timeout=8000)
     print("trade:", status.inner_text())
     pg.screenshot(path=f"{OUT}/filled.png")
     pg.get_by_role("button", name="Done").click()
+    expect(pg.get_by_role("dialog")).to_have_count(0)
 
     chart = pg.locator('[role="img"][aria-label^="Yes probability chart"]'); chart.scroll_into_view_if_needed(); box = chart.bounding_box()
     pg.mouse.move(box["x"] + 5, box["y"] + 5); pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=6)
     expect(pg.get_by_text(re.compile("Yes probability at")).first).to_be_visible()
 
     pg.get_by_role("button", name="Open menu", exact=True).click()
+    expect(pg.get_by_role("dialog", name="Menu")).to_be_visible(); pg.wait_for_timeout(600)  # let the drawer finish sliding in
     toggle = pg.get_by_role("button", name=re.compile("^Theme:"))
     toggle.click(); toggle.click()  # dark (default) -> system -> light
     pg.reload(); assert pg.evaluate("document.documentElement.dataset.theme") == "light"

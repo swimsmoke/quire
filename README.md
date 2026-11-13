@@ -2,7 +2,7 @@
 
 **Ask anything. Let the market answer.**
 
-Quire is a truth market on NEAR. You bring a question. If someone already asked it, you see what people currently believe. If not, you open a market on it: an AI drafts the claim, you seed it with as little as 0.1 NEAR, and people trade Yes or No from their own wallets. The market never closes. An AI running on NEAR AI Cloud researches the claim and keeps an encyclopedia page for it, rewritten as the price and the evidence change.
+Quire is a truth market on NEAR. You bring a question. If someone already asked it, you see what people currently believe. If not, you open a market on it: AI can draft the claim for you, you seed it with as little as 0.1 NEAR, and people trade Yes or No from their own wallets. The market never closes. An AI running on NEAR AI Cloud researches the claim and keeps an encyclopedia page for it, rewritten as the price and the evidence change.
 
 Built at NEAR HACKATHON (November 2026). Runs on testnet; the contract is unaudited.
 
@@ -53,6 +53,7 @@ This starts in simulated mode: five example claims and a test ledger, all labell
 pnpm --filter @quire/shared test   # market math
 pnpm --filter @quire/api test      # API, needs Postgres (docker compose up -d)
 cd contracts && cargo test         # contract
+python apps/web/e2e/trade_flow.py  # browser walk-through of the steps above; needs the app running and Playwright
 ```
 
 ## How it works

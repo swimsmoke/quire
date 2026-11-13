@@ -86,7 +86,7 @@ jobs:
           TVL_CAP: ${{ inputs.tvl_cap_near }}
           HOURS: ${{ inputs.challenge_period_hours }}
           KEY: ${{ secrets.QUIRE_CONTRACT_PRIVATE_KEY }}
-          QUIRE_DEPLOY_SEED: ${{ secrets.QUIRE_DEPLOY_SEED || vars.QUIRE_DEPLOY_SEED }}
+          QUIRE_DEPLOY_SEED: ${{ secrets.QUIRE_DEPLOY_SEED }} # secret only: plain variables show up in public logs
           NET: ${{ inputs.network }}
         run: |
           set -euo pipefail

@@ -8,12 +8,12 @@ For the hackathon Quire runs on **NEAR testnet** (free test NEAR from the faucet
 
 | Account | Purpose | Fund with |
 |---|---|---|
-| **Main** (your wallet) | Contract owner, resolver, market liquidity provider | 3.5 NEAR: 0.5 for fees and storage + 1 NEAR of liquidity for each of 3 markets |
+| **Main** (your wallet) | Contract owner and resolver; seeds the first markets (anyone can open more, from 0.1 NEAR each) | 3.5 NEAR: 0.5 for fees and storage + up to 1 NEAR of liquidity for each of 3 markets |
 | **Contract** (a separate, new account) | Holds the contract code | 3.5 NEAR: the code is 250 KB, which locks about 2.5 NEAR of storage (1 NEAR per 100 KB), plus headroom |
 | **Demo 1**, **Demo 2** | Two-wallet demo | 1 NEAR each |
 
-About 9 NEAR in total. Market liquidity is not lost: after the hackathon the owner can resolve each
-market as invalid and redeem the pool, which returns the liquidity minus any trading losses.
+About 9 NEAR in total. Market liquidity is not lost: when a market is resolved (as invalid, if nothing else),
+whoever seeded it redeems the pool and gets the liquidity back, minus any trading losses.
 
 ## Steps (testnet)
 
@@ -53,3 +53,25 @@ its key as `QUIRE_CONTRACT_PRIVATE_KEY` instead.
 - Anyone can create a market; the owner is the resolver, and resolution has a challenge window during which the owner can cancel.
 - The owner can change the caps and pause trading.
 - The API/indexer mirrors chain state for speed; the contract is the source of truth for balances.
+
+## Hosting the app
+
+The live app uses free tiers: Neon for Postgres, Render for the API (`render.yaml` in the repo root), Vercel for the web app (root directory `apps/web`).
+
+API environment (Render):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string |
+| `QUIRE_EXECUTION_MODE` | `ONCHAIN_TESTNET` |
+| `QUIRE_MARKET_CONTRACT` | the contract account, e.g. `hardsealowner.testnet` |
+| `QUIRE_DEV_AUTH` | leave unset (the API refuses to start with it on in on-chain mode) |
+| `WEB_ORIGIN` | the web app's URL, for CORS |
+| `SESSION_SECRET` | 32+ random characters |
+| `NEAR_AI_API_KEY` | from cloud.near.ai; needs a spending limit or credit |
+| `ONECLICK_API_KEY` | optional, from partners.near-intents.org; without it the funding page shows price estimates |
+
+Web environment (Vercel): `NEXT_PUBLIC_API_URL` = the API's URL.
+
+The API runs its migrations on start. In on-chain mode it seeds the agents but no markets: markets come from the contract.
+`.github/workflows/keepalive.yml` pings both every 10 minutes so the free API instance doesn't sleep during judging.
