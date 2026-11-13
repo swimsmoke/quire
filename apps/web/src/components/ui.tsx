@@ -47,7 +47,7 @@ export function Segmented<T extends string>({
 }
 
 /** Drawer: slides up from the bottom on phones, in from the right on larger screens. */
-export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+export function Sheet({ open, onClose, title, children, side = "right", bare = false }: { open: boolean; onClose: () => void; title: string; children: ReactNode; side?: "right" | "left"; bare?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => setMounted(true), []);
@@ -67,16 +67,21 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, onClose]);
   if (!mounted || !open) return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-stretch sm:justify-end" role="presentation">
+    <div className={`fixed inset-0 z-50 flex ${side === "left" ? "items-stretch justify-start" : "items-end justify-center sm:items-stretch sm:justify-end"}`} role="presentation">
       <div className="anim-fade absolute inset-0 bg-scrim" onClick={onClose} aria-hidden />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="anim-sheet relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-drawer sm:h-full sm:max-h-none sm:max-w-[420px] sm:rounded-none sm:pb-6"
+        className={
+          side === "left"
+            ? "anim-drawer-left relative h-full w-[86vw] max-w-[360px] overflow-y-auto bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)]"
+            : "anim-sheet relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-elevated pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-sheet)] sm:anim-drawer sm:h-full sm:max-h-none sm:max-w-[420px] sm:rounded-none sm:pb-6"
+        }
       >
-        <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-fill-2 sm:hidden" aria-hidden />
+        {bare ? children : <>
+        {side !== "left" && <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-fill-2 sm:hidden" aria-hidden />}
         <div className="flex items-center justify-between border-b hairline px-6 pt-3 pb-3 sm:pt-5 sm:pb-4">
           <h2 className="text-title3 font-semibold">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-md text-label-2 transition-colors hover:bg-fill hover:text-label">
@@ -84,6 +89,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
           </button>
         </div>
         <div className="px-6 pt-5">{children}</div>
+        </>}
       </div>
     </div>,
     document.body,

@@ -1,56 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
 import { fmtNear } from "@/lib/format";
 import { buttonPrimary, Sheet } from "./ui";
+import { Avatar } from "./avatar";
 
-export function SessionControl() {
-  const { me, ready, balance, signInSimulated, signOut, onchain, connectWallet, chain } = useSession();
+export function SessionControl({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const { me, ready, balance, signInSimulated, onchain, connectWallet, chain } = useSession();
   const [open, setOpen] = useState(false);
-  const [account, setAccount] = useState(false);
   const [handle, setHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // the menu drawer asks for the sign-in sheet this way
+  useEffect(() => {
+    const open = () => setOpen(true);
+    window.addEventListener("quire:signin", open);
+    return () => window.removeEventListener("quire:signin", open);
+  }, []);
 
   if (!ready) return <span className="h-8 w-20" aria-hidden />;
 
   if (me) {
     return (
-      <>
-        <button onClick={() => setAccount(true)} className="flex h-8 items-center gap-2 rounded-full pr-1 pl-3 text-sub transition-colors hover:bg-fill">
-          <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
-          <span className="grid size-7 place-items-center rounded-full bg-tint text-footnote font-semibold text-on-accent" aria-hidden>
-            {me.session.accountId.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="sr-only">Account {me.session.accountId}</span>
-        </button>
-        <Sheet open={account} onClose={() => setAccount(false)} title="Account">
-          <dl className="divide-y hairline border-y hairline text-sub">
-            <div className="flex justify-between py-3">
-              <dt className="text-label-2">Signed in as</dt>
-              <dd>{me.session.accountId}</dd>
-            </div>
-            <div className="flex justify-between py-3">
-              <dt className="text-label-2">{onchain ? "Deposited in Quire" : "Available"}</dt>
-              <dd className="tabular">{fmtNear(balance)} NEAR</dd>
-            </div>
-            <div className="flex justify-between py-3">
-              <dt className="text-label-2">Sign-in method</dt>
-              <dd>{me.session.method === "DEV_SIM" ? "Simulated account" : `NEAR wallet (${chain.network})`}</dd>
-            </div>
-          </dl>
-          <button
-            onClick={() => {
-              signOut();
-              setAccount(false);
-            }}
-            className="mt-4 h-11 w-full rounded-md bg-fill text-sub font-semibold text-no transition-transform active:scale-[0.98]"
-          >
-            {onchain ? "Disconnect wallet" : "Sign out"}
-          </button>
-        </Sheet>
-      </>
+      <button onClick={onOpenMenu} className="flex h-9 items-center gap-2 rounded-full pr-0.5 pl-3 text-sub transition-colors hover:bg-fill">
+        <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
+        <Avatar account={me.session.accountId} size={32} />
+        <span className="sr-only">Account {me.session.accountId}, open menu</span>
+      </button>
     );
   }
 

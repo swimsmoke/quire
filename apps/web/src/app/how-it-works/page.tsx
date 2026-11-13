@@ -53,7 +53,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     h: "What is planned next",
     p: [
       "Analysis and trading agents: the contract already enforces per-agent limits (an on/off switch, a largest trade, a total spend, and no withdrawals), but no trading agent runs in this build.",
-      "Cross-chain funding: NEAR Intents to swap an asset from another chain into NEAR, and Chain Signatures to sign that deposit from a NEAR account. Neither is connected yet.",
+      "Cross-chain funding: the funding page already shows live NEAR Intents quotes for turning USDC, ETH, SOL or BTC into NEAR. NEAR Intents only runs on mainnet, so sending switches on when Quire moves there. Chain Signatures, to sign that deposit from a NEAR account, is not connected yet.",
       "Wider source discovery for Scout beyond reference pages, and an attested multi-model panel for the rare cases where a claim needs to be resolved.",
     ],
   },

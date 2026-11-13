@@ -1,4 +1,4 @@
-import type { LeaderRow, Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
+import type { LeaderRow, Profile, Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
 
 /** Server-side base URL (inside the network) vs browser base URL. */
 const SERVER_API = process.env.QUIRE_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -39,6 +39,7 @@ export const api = {
   activity: (limit = 12) => get<{ activity: Trade[] }>(`/activity?limit=${limit}`),
   agents: () => get<{ agents: Agent[] }>("/agents"),
   leaderboard: () => get<{ leaderboard: LeaderRow[] }>("/leaderboard"),
+  profile: (account: string) => get<Profile>(`/profile/${encodeURIComponent(account)}`),
   agentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/agents/${encodeURIComponent(slug)}/activity`),
 };
 

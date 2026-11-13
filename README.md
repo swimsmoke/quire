@@ -19,7 +19,8 @@ Built at NEAR HACKATHON (November 2026). Runs on testnet; the contract is unaudi
 3. Scroll to **Evidence**. Each quote has been fetched from its source and checked word for word.
 4. Connect a NEAR testnet wallet (Meteor works), deposit a little test NEAR in **Funds**, and buy Yes or No. Once the transaction lands, the price moves and the trade shows up with a link to the explorer.
 5. Go to **Ask** and type a question. Matching claims show up as you type. For a new one, press **Draft the market with AI**, check the fields and open it. Within a minute or so the new claim has sources from Scout and a first encyclopedia page.
-6. **Leaderboard** ranks traders by profit across all claims.
+6. **Leaderboard** ranks traders by profit across all claims. Click a name for their profile: profit chart, positions, trades and the markets they opened.
+7. Open the menu (top right) and choose **Fund from any chain** for a live NEAR Intents quote, for example USDC on Base to NEAR. Sending stays off on testnet; see below.
 
 The API also answers directly (it's on a free host, so the first request can take up to a minute):
 
@@ -66,6 +67,8 @@ cd contracts && cargo test         # contract
 
 **Encyclopedia.** The first revision is written automatically when a claim opens. After that, a new one is written when there's new verified evidence or the price moves 3 points or more. The model gets the live price, its history, trading stats, the checked evidence and the previous revision, and has to return a fixed eight-section structure. Citations that don't match real evidence are dropped. Old revisions are kept.
 
+**Funding from other chains.** NEAR Intents (1Click API) swaps assets like USDC on Base, ETH or SOL into NEAR. Quire's API reads 1Click's token list and asks for dry quotes, which never create a deposit address. NEAR Intents only runs on mainnet and Quire is on testnet, so sending is switched off and the page says so. With `ONECLICK_API_KEY` set the quotes come from solvers; without it the page shows an estimate from 1Click's live prices, labelled as such.
+
 **Verification.** NEAR AI Cloud runs the model inside a hardware enclave that signs hashes of each request and response. Quire hashes what it actually sent and received and checks the signature matches. That proves where the text came from, not that it's true, and the page says so.
 
 ## What's built and what isn't
@@ -78,9 +81,11 @@ cd contracts && cargo test         # contract
 | Evidence fetching and quote checking | Live |
 | Anyone can create a market, with AI drafting | Live |
 | Automatic research and first article for new claims | Live |
-| Trader leaderboard | Live |
+| Trader leaderboard and profiles | Live |
+| Cross-chain funding quotes via NEAR Intents | Live (quotes only) |
 | Trading and analysis agents | Not running yet. The contract already enforces agent spending limits |
-| NEAR Intents and Chain Signatures funding | Planned |
+| Sending through NEAR Intents | With the mainnet launch |
+| Chain Signatures | Planned |
 
 ## Trust
 

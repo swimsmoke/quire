@@ -26,3 +26,5 @@ services:
         sync: false # the contract account, e.g. quire-markets.testnet
       - key: NEAR_AI_API_KEY
         sync: false # from cloud.near.ai
+      - key: ONECLICK_API_KEY
+        sync: false # optional, from partners.near-intents.org; without it the funding page shows price estimates

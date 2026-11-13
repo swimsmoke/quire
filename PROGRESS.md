@@ -9,11 +9,13 @@
 - First encyclopedia revision generated on NEAR AI Cloud, signature verified
 - Open market creation: ask a question, AI drafts the claim, anyone opens it
 - Scout researches new claims by itself; Scribe writes the first page unprompted
-- Leaderboard
+- Leaderboard and trader profiles
+- NEAR Intents funding page with live quotes (sending waits for mainnet)
 
 ## Next
 
 - Trading and analysis agents
-- NEAR Intents funding and Chain Signatures
+- Turn on NEAR Intents sending with a reviewed mainnet contract
+- Chain Signatures
 - Sources beyond Wikipedia for Scout
 - Contract audit before any mainnet use

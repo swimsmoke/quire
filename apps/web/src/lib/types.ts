@@ -187,3 +187,35 @@ export interface ClaimDraft {
   description: string;
   resolutionCriteria: string;
 }
+
+export interface Profile {
+  account: string;
+  actorKind: "HUMAN" | "AGENT";
+  agentName: string | null;
+  joinedAt: string | null;
+  rank: number | null;
+  traders: number;
+  stats: { positionsValue: string; biggestWin: string; marketsTraded: number; totalPnl: string; totalVolume: string; trades: number; marketsCreated: number };
+  pnl: { t: string; pnl: string }[];
+  positions: { slug: string; question: string; probabilityYesPpm: number; yesShares: string; noShares: string; value: string; pnl: string }[];
+  activity: { id: string; slug: string; question: string; side: "BUY" | "SELL"; outcome: "YES" | "NO"; collateral: string; shares: string; avgPricePpm: number; createdAt: string; executionMode: ExecutionMode }[];
+  created: { slug: string; question: string; probabilityYesPpm: number; createdAt: string; volume: string }[];
+}
+
+export interface IntentsToken {
+  assetId: string;
+  symbol: string;
+  blockchain: string;
+  decimals: number;
+  price: number;
+}
+
+export interface FundingQuote {
+  source: "ONECLICK_QUOTE" | "PRICE_ESTIMATE";
+  amountIn: string;
+  amountInUsd: number;
+  amountOutNear: string;
+  minAmountOutNear?: string;
+  timeEstimateS?: number;
+  note?: string;
+}

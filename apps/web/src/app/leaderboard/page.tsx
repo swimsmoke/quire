@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, UserRound } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { api } from "@/lib/api";
 import { PageTitle } from "@/components/section";
 import { fmtNear, fmtNearCompact, shortAccount } from "@/lib/format";
@@ -39,12 +39,10 @@ export default async function LeaderboardPage() {
                     <td className={`py-3.5 font-semibold ${i < 3 ? "text-label" : "text-label-3"}`}>{i + 1}</td>
                     <td className="py-3.5">
                       <span className="flex items-center gap-2.5">
-                        <span className={`grid size-7 place-items-center rounded-full ${r.actorKind === "AGENT" ? "bg-tint/15 text-tint" : "bg-fill-2 text-label-2"}`}>
-                          {r.actorKind === "AGENT" ? <Bot size={14} aria-label="agent" /> : <UserRound size={14} aria-label="human" />}
-                        </span>
-                        <span className="font-medium" title={r.account}>
+                        <Avatar account={r.account} size={30} agent={r.actorKind === "AGENT"} />
+                        <Link href={`/profile/${encodeURIComponent(r.account)}`} className="font-medium hover:text-tint" title={r.account}>
                           {shortAccount(r.account)}
-                        </span>
+                        </Link>
                       </span>
                     </td>
                     <td className={`py-3.5 text-right font-semibold ${pnl > 0n ? "text-yes" : pnl < 0n ? "text-no" : "text-label-2"}`}>

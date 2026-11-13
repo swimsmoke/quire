@@ -34,7 +34,8 @@ const Env = z.object({
   ARTICLE_MIN_INTERVAL_S: z.coerce.number().int().min(0).default(120),
 
   ONECLICK_BASE_URL: z.string().url().default("https://1click.chaindefuser.com"),
-  ONECLICK_JWT: z.string().optional(),
+  ONECLICK_API_KEY: z.string().optional(), // from partners.near-intents.org; needed for live quotes
+  ONECLICK_JWT: z.string().optional(), // older auth, still accepted
 });
 
 // Treat blank values in .env as unset.

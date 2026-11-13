@@ -15,7 +15,9 @@ export function TradeTape({ trades, showMarket = false, empty = "No trades yet."
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sub">
-              <span className="font-medium">{t.agentName ?? shortAccount(t.traderAccount)}</span> {t.side === "BUY" ? "bought" : "sold"}{" "}
+              <Link href={`/profile/${encodeURIComponent(t.traderAccount)}`} className="font-medium hover:text-tint">
+                {t.agentName ?? shortAccount(t.traderAccount)}
+              </Link> {t.side === "BUY" ? "bought" : "sold"}{" "}
               <span className={`font-medium ${t.outcome === "YES" ? "text-yes" : "text-no"}`}>{t.outcome === "YES" ? "Yes" : "No"}</span>
               <span className="tabular text-label-2"> for {fmtNear(t.collateral)} NEAR</span>
             </p>

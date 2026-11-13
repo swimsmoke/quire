@@ -173,6 +173,14 @@
     transform: translateX(0);
   }
 }
+@keyframes drawer-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -213,6 +221,9 @@
 }
 @utility anim-drawer {
   animation: drawer-in 0.45s var(--ease-ios) both;
+}
+@utility anim-drawer-left {
+  animation: drawer-left 0.4s var(--ease-glide) both;
 }
 @utility anim-pop {
   animation: pop-in 0.35s var(--ease-ios) both;

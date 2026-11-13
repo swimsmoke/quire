@@ -38,7 +38,7 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 | **NEAR wallets via NEAR Connect** (`@hot-labs/near-connect`) | Users sign deposits, trades and withdrawals in their own wallet (Meteor and others). | Live |
 | **NEAR RPC** | The API fetches each submitted transaction hash, checks it succeeded against the contract, and mirrors the events. The web app reads balances with view calls. | Live |
 | **NEAR AI Cloud** (OpenAI-compatible API, models inside TEEs) | Generates encyclopedia revisions. Quire stores sha256 of the exact request and response, fetches the enclave signature for the chat id, checks the signed text contains both hashes and that the signature recovers to the signing address, and checks that address appears in the attestation report. | Live |
-| **NEAR Intents (1Click API)** | Planned: swap an asset from another chain into NEAR in the user's wallet. Mainnet only; there is no testnet deployment. | Not built |
+| **NEAR Intents (1Click API)** | Funding page: token list and dry quotes (`/intents/tokens`, `/intents/quote`) for swapping an asset from another chain into NEAR. Dry quotes never create a deposit address. Mainnet only, so sending is off while Quire is on testnet. | Quotes live; sending off |
 | **Chain Signatures** | Planned: sign the origin-chain deposit for an Intents swap from a NEAR account. | Not built |
 
 ## 3. Collateral: native NEAR

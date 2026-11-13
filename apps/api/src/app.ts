@@ -8,6 +8,8 @@ import { bearer, sessionCodec, type Session } from "./auth/session.js";
 import { toJson } from "./http/serialize.js";
 import { TradeError } from "./market/engine.js";
 import { marketRoutes } from "./routes/markets.js";
+import { intentsRoutes } from "./routes/intents.js";
+import { profileRoutes } from "./routes/profile.js";
 import { authRoutes } from "./routes/auth.js";
 import { portfolioRoutes } from "./routes/portfolio.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
@@ -25,6 +27,7 @@ declare module "fastify" {
     chainFetch?: typeof fetch;
     aiFetch?: typeof fetch;
     webFetch?: typeof fetch;
+    intentsFetch?: typeof fetch;
     internalKey: string;
     requireSession: (req: FastifyRequest, reply: FastifyReply) => Promise<Session>;
   }
@@ -40,13 +43,14 @@ const TRADE_ERROR_STATUS: Record<string, number> = {
   INSUFFICIENT_SHARES: 422,
 };
 
-export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean; chainFetch?: typeof fetch; aiFetch?: typeof fetch; webFetch?: typeof fetch } = {}) {
+export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean; chainFetch?: typeof fetch; aiFetch?: typeof fetch; webFetch?: typeof fetch; intentsFetch?: typeof fetch } = {}) {
   const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 64 * 1024 });
   app.decorate("db", db);
   app.decorate("cfg", cfg);
   app.decorate("chainFetch", opts.chainFetch);
   app.decorate("aiFetch", opts.aiFetch);
   app.decorate("webFetch", opts.webFetch);
+  app.decorate("intentsFetch", opts.intentsFetch);
   app.decorate("sessions", sessionCodec(cfg.SESSION_SECRET));
   app.decorate("requireSession", async (req: FastifyRequest, reply: FastifyReply) => {
     const token = bearer(req);
@@ -98,5 +102,7 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean;
   await app.register(knowledgeRoutes);
   await app.register(onchainRoutes);
   await app.register(scribeRoutes);
+  await app.register(intentsRoutes);
+  await app.register(profileRoutes);
   return app;
 }

@@ -3,7 +3,7 @@
 #   python apps/web/e2e/trade_flow.py
 # Covers: simulated sign-in sheet, test funds, quick amounts, live quote, review sheet,
 # confirm, filled state, chart scrubbing, theme toggle persistence, light/dark screenshots,
-# and asking a question: existing claim found, new market opened from the practice balance.
+# asking a question (existing claim found, new market opened), the menu, profile and funding page.
 import os, re, uuid
 from playwright.sync_api import sync_playwright, expect
 
@@ -35,6 +35,7 @@ with sync_playwright() as p:
     pg.mouse.move(box["x"] + 5, box["y"] + 5); pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=6)
     expect(pg.get_by_text(re.compile("Yes probability at")).first).to_be_visible()
 
+    pg.get_by_role("button", name="Open menu", exact=True).click()
     toggle = pg.get_by_role("button", name=re.compile("^Theme:"))
     toggle.click(); toggle.click()  # dark (default) -> system -> light
     pg.reload(); assert pg.evaluate("document.documentElement.dataset.theme") == "light"
@@ -61,6 +62,18 @@ with sync_playwright() as p:
     expect(pg.get_by_role("heading", name=re.compile("volcano erupt"))).to_be_visible()
     pg.screenshot(path=f"{OUT}/new-claim.png")
     pg.goto(BASE + "/leaderboard"); expect(pg.get_by_role("table")).to_be_visible()
+
+    # Profile: reached from the menu, shows this account's trade
+    pg.get_by_role("button", name="Open menu", exact=True).click()
+    pg.get_by_role("navigation", name="Menu").get_by_role("link", name="Profile").click()
+    pg.wait_for_url(re.compile(r"/profile/"), timeout=8000)
+    expect(pg.get_by_text("Total profit/loss")).to_be_visible()
+    pg.get_by_role("tab", name=re.compile("Activity")).click()
+    expect(pg.get_by_text(re.compile("Bought")).first).to_be_visible()
+    pg.screenshot(path=f"{OUT}/profile.png", full_page=True)
+
+    # Funding page loads assets from NEAR Intents (needs network access to 1Click)
+    pg.goto(BASE + "/fund"); expect(pg.get_by_role("heading", name="Fund from another chain")).to_be_visible()
 
     assert not errs, errs
     print("ok")

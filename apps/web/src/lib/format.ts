@@ -49,3 +49,11 @@ export const shortAccount = (a: string) => (a.length > 22 ? `${a.slice(0, 10)}�
 
 const CATEGORY: Record<string, string> = { ai: "AI", near: "NEAR", crypto: "Crypto" };
 export const category = (c: string) => CATEGORY[c] ?? c.charAt(0).toUpperCase() + c.slice(1);
+
+/** Signed NEAR amount for profit and loss: "+1.20", "−0.35". */
+export const signed = (v: string | bigint, digits = 2) => {
+  const n = BigInt(v);
+  return `${n > 0n ? "+" : n < 0n ? "−" : ""}${fmtNear((n < 0n ? -n : n).toString(), digits)}`;
+};
+/** Text colour for a profit or loss. */
+export const tone = (v: string | bigint) => (BigInt(v) > 0n ? "text-yes" : BigInt(v) < 0n ? "text-no" : "text-label-2");
