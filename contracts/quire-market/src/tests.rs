@@ -631,6 +631,6 @@ fn owner_cannot_cancel_jury_ruling() {
 fn owner_sets_challenge_period() {
     let mut c = setup();
     as_view(owner());
-    c.set_challenge_period(U64(42));
-    assert_eq!(c.get_config().challenge_period_ns.0, 42);
+    c.set_challenge_period(U64(600_000_000_000));
+    assert_eq!(c.get_config().challenge_period_ns.0, 600_000_000_000);
 }

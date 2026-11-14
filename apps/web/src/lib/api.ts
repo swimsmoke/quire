@@ -1,4 +1,4 @@
-import type { LeaderRow, Profile, Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
+import type { Ruling, RulingInference, LeaderRow, Profile, Agent, AgentActivity, Claim, Encyclopedia, Evidence, Health, HistoryPoint, Market, Trade } from "./types";
 
 /** Server-side base URL (inside the network) vs browser base URL. */
 const SERVER_API = process.env.QUIRE_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -40,6 +40,9 @@ export const api = {
   agents: () => get<{ agents: Agent[] }>("/agents"),
   leaderboard: () => get<{ leaderboard: LeaderRow[] }>("/leaderboard"),
   profile: (account: string) => get<Profile>(`/profile/${encodeURIComponent(account)}`),
+  ruling: (slug: string) => get<{ ruling: Ruling | null; cooldownS: number; juryReady: boolean }>(`/markets/${encodeURIComponent(slug)}/ruling`),
+  results: () => get<{ results: Ruling[]; counts: { total: number; settled: number } }>("/results"),
+  rulingDetail: (id: string) => get<Ruling & { inferences: RulingInference[] }>(`/rulings/${encodeURIComponent(id)}`),
   agentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/agents/${encodeURIComponent(slug)}/activity`),
 };
 

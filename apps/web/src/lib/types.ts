@@ -221,3 +221,55 @@ export interface FundingQuote {
   timeEstimateS?: number;
   note?: string;
 }
+
+export type RulingStage = "NO_RULING" | "NOT_PROPOSED" | "CHALLENGE_WINDOW" | "DISPUTED" | "READY_TO_SETTLE" | "SETTLED";
+
+export interface JuryVote {
+  model: string;
+  verdict: "YES" | "NO" | "INVALID" | "NOT_YET" | null;
+  confidence: number | null;
+  reasoning: string | null;
+  citations: { key: string; title: string; url: string }[];
+  inferenceId: string | null;
+  signatureVerified: boolean | null;
+  attestationBindsSigner: boolean | null;
+  latencyMs: number | null;
+  error: string | null;
+}
+
+export interface Ruling {
+  id: string;
+  market: { slug: string; question: string; category: string; status: string; probabilityYesPpm: number; executionMode: string; onchainId: number | null };
+  verdict: "YES" | "NO" | "INVALID" | "NOT_YET";
+  outcome: "PROPOSED" | "NO_RULING" | "PROPOSE_FAILED";
+  stage: RulingStage;
+  votes: JuryVote[];
+  evidenceCount: number;
+  durationMs: number;
+  requestedBy: string | null;
+  proposalTx: string | null;
+  proposalError: string | null;
+  challengeEndsAt: string | null;
+  disputedBy: string | null;
+  disputedAt: string | null;
+  disputeTx: string | null;
+  finalizedAt: string | null;
+  finalizeTx: string | null;
+  disputeBond: string;
+  payout: { total: string; holders: number } | null;
+  createdAt: string;
+}
+
+export interface RulingInference {
+  id: string;
+  model: string;
+  chatId: string | null;
+  requestHash: string | null;
+  responseHash: string | null;
+  signatureText: string | null;
+  signature: string | null;
+  signingAddress: string | null;
+  signingAlgo: string | null;
+  signatureVerified: boolean | null;
+  attestationBindsSigner: boolean | null;
+}

@@ -4,6 +4,7 @@ import { Bot, ChevronLeft, ChevronRight, ShieldCheck, UserRound } from "lucide-r
 import { api, ApiError } from "@/lib/api";
 import { PriceChart } from "@/components/price-chart";
 import { TradeTicket } from "@/components/trade-ticket";
+import { JuryPanel } from "@/components/jury";
 import { TradeTape } from "@/components/trade-tape";
 import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
@@ -31,7 +32,7 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
     throw e;
   }
   const { market: m, claim, related } = detail;
-  const [history, tape, ency, ev, agentAct, health] = await Promise.all([api.history(slug), api.trades(slug, 25), api.encyclopedia(slug), api.evidence(slug), api.marketAgentActivity(slug), api.health().catch(() => null)]);
+  const [history, tape, ency, ev, agentAct, health, jury] = await Promise.all([api.history(slug), api.trades(slug, 25), api.encyclopedia(slug), api.evidence(slug), api.marketAgentActivity(slug), api.health().catch(() => null), api.ruling(slug).catch(() => null)]);
   // the background writer only runs when NEAR AI Cloud is configured on the API
   const aiWriting = health?.integrations.nearAiCloud === "configured";
   const asOf = Date.now();
@@ -92,6 +93,7 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
         </aside>
 
         <div className="space-y-16 lg:col-start-1">
+          <JuryPanel slug={slug} initial={jury?.ruling ?? null} cooldownS={jury?.cooldownS ?? 0} juryReady={jury?.juryReady ?? false} onchainId={m.onchainId ?? null} />
           <section id="article" aria-labelledby="art-h" className="scroll-mt-20 border-t hairline pt-8">
             <div className="flex items-baseline justify-between gap-4">
               <SectionHeader id="art-h" title="Encyclopedia" />

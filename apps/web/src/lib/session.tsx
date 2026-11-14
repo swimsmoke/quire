@@ -221,6 +221,11 @@ const CHAIN_ERRORS: Record<string, string> = {
   ERR_NOT_CREATOR: "Only the person who created this market can do that.",
   ERR_BAD_SLUG: "The market's web address is too long. Shorten the question.",
   ERR_DUPLICATE_ORDER: "This order was already submitted.",
+  ERR_CHALLENGE_WINDOW_CLOSED: "The challenge window has closed, so this ruling can no longer be disputed.",
+  ERR_CHALLENGE_WINDOW_OPEN: "The challenge window is still open. Settle once it ends.",
+  ERR_DISPUTE_PENDING: "Someone has already disputed this ruling.",
+  ERR_NOT_RESOLVED: "This claim is not settled yet.",
+  ERR_BAD_STATUS: "This claim is not in a state where that can happen.",
 };
 
 /** Turn a contract panic or wallet error into a plain sentence. */

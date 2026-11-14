@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeftRight, BookOpen, Bot, Briefcase, Code2, Home, LayoutList, LogOut, Menu, Sparkles, Trophy, UserRound } from "lucide-react";
+import { ArrowLeftRight, Gavel, BookOpen, Bot, Briefcase, Code2, Home, LayoutList, LogOut, Menu, Sparkles, Trophy, UserRound } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { SessionControl } from "./session-control";
 import { SimulatedBadge } from "./mode";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/ask", label: "Ask" },
   { href: "/markets", label: "Markets" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/results", label: "Results" },
   { href: "/agents", label: "Agents" },
   { href: "/how-it-works", label: "How it works" },
 ];
@@ -86,6 +87,7 @@ function MenuDrawer({ open, onClose, apiOnline }: { open: boolean; onClose: () =
   ];
   const small = [
     { href: "/markets", label: "Markets", icon: <LayoutList size={16} /> },
+    { href: "/results", label: "Results", icon: <Gavel size={16} /> },
     { href: "/agents", label: "Agents", icon: <Bot size={16} /> },
     { href: "/portfolio", label: "Portfolio details", icon: <Briefcase size={16} /> },
     { href: "/how-it-works", label: "How it works", icon: <BookOpen size={16} /> },

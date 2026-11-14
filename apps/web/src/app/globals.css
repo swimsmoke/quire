@@ -350,3 +350,11 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* AI jury: three seats light up in turn while the judges deliberate. */
+@keyframes jury-seat {
+  0%, 100% { background: var(--elevated); border-color: var(--separator); }
+  40% { background: color-mix(in oklab, var(--amber) 14%, var(--elevated)); border-color: color-mix(in oklab, var(--amber) 45%, transparent); }
+}
+.jury-seat { animation: jury-seat 1.35s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .jury-seat { animation: none; } }

@@ -499,6 +499,7 @@ impl QuireMarket {
 
     pub fn set_resolver(&mut self, resolver_id: AccountId) {
         self.assert_owner();
+        emit("resolver_changed", json!({ "resolver_id": resolver_id }));
         self.resolver_id = resolver_id;
     }
 
@@ -666,6 +667,8 @@ impl QuireMarket {
 
     pub fn set_challenge_period(&mut self, challenge_period_ns: U64) {
         self.assert_owner();
+        require!(challenge_period_ns.0 >= 60_000_000_000, "ERR_PERIOD_TOO_SHORT");
+        emit("challenge_period_changed", json!({ "challenge_period_ns": challenge_period_ns }));
         self.challenge_period_ns = challenge_period_ns.0;
     }
 
