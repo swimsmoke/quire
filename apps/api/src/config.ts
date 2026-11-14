@@ -33,6 +33,14 @@ const Env = z.object({
   ARTICLE_MIN_MOVE_PPM: z.coerce.number().int().min(0).default(30_000),
   ARTICLE_MIN_INTERVAL_S: z.coerce.number().int().min(0).default(120),
 
+  /** AI jury: the resolver account that proposes rulings on-chain, and its key (Render secret). */
+  JURY_ACCOUNT_ID: z.string().optional(),
+  JURY_PRIVATE_KEY: z.string().regex(/^ed25519:[1-9A-HJ-NP-Za-km-z]+$/).optional(),
+  /** Seconds before the jury may be asked about the same claim again. */
+  JURY_COOLDOWN_S: z.coerce.number().int().min(0).default(600),
+  /** Challenge window for simulated markets; on-chain the contract's period applies. */
+  JURY_CHALLENGE_S: z.coerce.number().int().min(0).default(600),
+
   ONECLICK_BASE_URL: z.string().url().default("https://1click.chaindefuser.com"),
   ONECLICK_API_KEY: z.string().optional(), // from partners.near-intents.org; needed for live quotes
   ONECLICK_JWT: z.string().optional(), // older auth, still accepted

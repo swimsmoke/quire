@@ -417,7 +417,7 @@ fn cannot_finalize_inside_challenge_window() {
 }
 
 #[test]
-fn owner_can_cancel_proposal_and_market_continues() {
+fn resolver_can_cancel_proposal_and_market_continues() {
     let mut c = setup();
     as_view(owner());
     c.propose_resolution(0, Resolution::No, String::new());
@@ -536,4 +536,101 @@ fn strangers_cannot_take_a_pool() {
     c.finalize_resolution(0);
     as_view(bob());
     c.redeem_pool(0);
+}
+
+// ---------- disputes ----------
+
+fn jury() -> AccountId {
+    "jury.testnet".parse().unwrap()
+}
+
+fn with_jury() -> QuireMarket {
+    let mut c = setup();
+    as_view(owner());
+    c.set_resolver(jury());
+    c
+}
+
+fn as_user_at(a: AccountId, ts: u64) {
+    ctx(a, NearToken::from_yoctonear(1), ts)
+}
+
+#[test]
+fn upheld_dispute_refunds_bond_and_new_ruling_finalizes() {
+    let mut c = with_jury();
+    as_view(jury());
+    c.propose_resolution(0, Resolution::Yes, String::new());
+    let before = c.get_account(bob()).unwrap().balance.0;
+    as_user_at(bob(), 500);
+    c.dispute_resolution(0);
+    assert_eq!(c.get_account(bob()).unwrap().balance.0, before - DISPUTE_BOND);
+    assert_eq!(c.get_market(0).unwrap().status, MarketStatus::Active);
+    assert_eq!(c.get_dispute(0).unwrap().disputed, Resolution::Yes);
+
+    ctx(jury(), NearToken::from_yoctonear(0), 600);
+    c.propose_resolution(0, Resolution::No, String::new());
+    assert_eq!(c.get_account(bob()).unwrap().balance.0, before);
+    assert!(c.get_dispute(0).is_none());
+    ctx(alice(), NearToken::from_yoctonear(0), 1_700);
+    c.finalize_resolution(0);
+    assert_eq!(c.get_market(0).unwrap().resolved, Some(Resolution::No));
+}
+
+#[test]
+fn rejected_dispute_pays_bond_to_creator() {
+    let mut c = with_jury();
+    as_view(jury());
+    c.propose_resolution(0, Resolution::Yes, String::new());
+    let creator_before = c.get_account(owner()).unwrap().balance.0;
+    let bob_before = c.get_account(bob()).unwrap().balance.0;
+    as_user_at(bob(), 10);
+    c.dispute_resolution(0);
+    ctx(jury(), NearToken::from_yoctonear(0), 20);
+    c.propose_resolution(0, Resolution::Yes, String::new());
+    assert_eq!(c.get_account(owner()).unwrap().balance.0, creator_before + DISPUTE_BOND);
+    assert_eq!(c.get_account(bob()).unwrap().balance.0, bob_before - DISPUTE_BOND);
+}
+
+#[test]
+#[should_panic(expected = "ERR_CHALLENGE_WINDOW_CLOSED")]
+fn cannot_dispute_after_window() {
+    let mut c = with_jury();
+    as_view(jury());
+    c.propose_resolution(0, Resolution::Yes, String::new());
+    as_user_at(bob(), 1_000);
+    c.dispute_resolution(0);
+}
+
+#[test]
+#[should_panic(expected = "ERR_BAD_STATUS")]
+fn cannot_dispute_without_proposal() {
+    let mut c = with_jury();
+    as_user(bob());
+    c.dispute_resolution(0);
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_RESOLVER")]
+fn owner_cannot_propose_once_jury_is_resolver() {
+    let mut c = with_jury();
+    as_view(owner());
+    c.propose_resolution(0, Resolution::No, String::new());
+}
+
+#[test]
+#[should_panic(expected = "ERR_NOT_RESOLVER")]
+fn owner_cannot_cancel_jury_ruling() {
+    let mut c = with_jury();
+    as_view(jury());
+    c.propose_resolution(0, Resolution::No, String::new());
+    as_view(owner());
+    c.cancel_resolution(0);
+}
+
+#[test]
+fn owner_sets_challenge_period() {
+    let mut c = setup();
+    as_view(owner());
+    c.set_challenge_period(U64(42));
+    assert_eq!(c.get_config().challenge_period_ns.0, 42);
 }

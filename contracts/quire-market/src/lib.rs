@@ -13,9 +13,10 @@
 //!   can never withdraw; only their owner can reclaim agent funds.
 //! - Every trade takes a min-out slippage bound and an optional client order id
 //!   that is rejected if reused (duplicate-execution protection).
-//! - Resolution is optional for perpetual markets: a resolver proposes, a
-//!   challenge window passes, then anyone can finalize. The owner can cancel a
-//!   proposal during the window. This is a centralised trust assumption.
+//! - Resolution is optional for perpetual markets: the resolver (an AI jury
+//!   account) proposes, anyone can dispute inside the challenge window by
+//!   posting a bond, and once a window passes undisputed anyone can finalize.
+//!   The owner can pause trading but cannot propose, cancel or change a ruling.
 
 pub mod fpmm;
 
@@ -43,6 +44,40 @@ const GAS_CALLBACK: Gas = Gas::from_tgas(10);
 
 /// Smallest seed for a new market: 0.1 NEAR.
 pub const MIN_MARKET_LIQUIDITY: u128 = 100_000;
+
+/// Bond to dispute a proposed ruling: 0.5 NEAR.
+pub const DISPUTE_BOND: u128 = 500_000;
+
+fn dispute_key(market_id: u32) -> Vec<u8> {
+    let mut k = b"dispute:".to_vec();
+    k.extend_from_slice(&market_id.to_le_bytes());
+    k
+}
+
+fn resolution_code(r: Resolution) -> u8 {
+    match r {
+        Resolution::Yes => 0,
+        Resolution::No => 1,
+        Resolution::Invalid => 2,
+    }
+}
+
+fn resolution_from_code(c: u8) -> Resolution {
+    match c {
+        0 => Resolution::Yes,
+        1 => Resolution::No,
+        _ => Resolution::Invalid,
+    }
+}
+
+/// A pending dispute: who posted the bond and which ruling they rejected.
+#[near(serializers = [json])]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DisputeView {
+    pub account_id: AccountId,
+    pub disputed: Resolution,
+    pub bond: U128,
+}
 
 fn creator_key(market_id: u32) -> Vec<u8> {
     let mut k = b"creator:".to_vec();
@@ -574,8 +609,9 @@ impl QuireMarket {
         require!(env::predecessor_account_id() == self.resolver_id, "ERR_NOT_RESOLVER");
         require!(evidence_uri.len() <= MAX_URI_LEN, "ERR_BAD_URI");
         let now = env::block_timestamp();
+        require!(matches!(self.market(market_id).status, MarketStatus::Active | MarketStatus::Paused), "ERR_BAD_STATUS");
+        self.settle_dispute(market_id, resolution);
         let m = self.market_mut(market_id);
-        require!(matches!(m.status, MarketStatus::Active | MarketStatus::Paused), "ERR_BAD_STATUS");
         m.status = MarketStatus::ResolutionProposed;
         m.proposed = Some(resolution);
         m.proposed_at = now;
@@ -583,14 +619,54 @@ impl QuireMarket {
         emit("resolution_proposed", json!({ "market_id": market_id, "resolution": resolution, "evidence_uri": evidence_uri }));
     }
 
+    /// The resolver (the AI jury) can withdraw its own proposal during the window,
+    /// for example when it sees new evidence. The owner has no say over outcomes.
     pub fn cancel_resolution(&mut self, market_id: u32) {
-        self.assert_owner();
+        require!(env::predecessor_account_id() == self.resolver_id, "ERR_NOT_RESOLVER");
         let m = self.market_mut(market_id);
         require!(m.status == MarketStatus::ResolutionProposed, "ERR_BAD_STATUS");
         m.status = MarketStatus::Active;
         m.proposed = None;
         m.proposed_at = 0;
         emit("resolution_cancelled", json!({ "market_id": market_id }));
+    }
+
+    /// Anyone can reject a proposed ruling inside the challenge window by posting
+    /// a bond from their Quire balance. The market goes back to trading and the
+    /// jury has to rule again. When it does, the bond is returned if the new
+    /// ruling differs from the one disputed; otherwise it goes to the market's
+    /// creator. One dispute is held per market at a time.
+    #[payable]
+    pub fn dispute_resolution(&mut self, market_id: u32) {
+        near_sdk::assert_one_yocto();
+        let account_id = env::predecessor_account_id();
+        let now = env::block_timestamp();
+        let period = self.challenge_period_ns;
+        let m = self.market(market_id);
+        require!(m.status == MarketStatus::ResolutionProposed, "ERR_BAD_STATUS");
+        require!(now < m.proposed_at + period, "ERR_CHALLENGE_WINDOW_CLOSED");
+        require!(env::storage_read(&dispute_key(market_id)).is_none(), "ERR_DISPUTE_PENDING");
+        let disputed = m.proposed.unwrap();
+        self.debit(&account_id, DISPUTE_BOND);
+        let mut v = vec![resolution_code(disputed)];
+        v.extend_from_slice(account_id.as_bytes());
+        env::storage_write(&dispute_key(market_id), &v);
+        let m = self.market_mut(market_id);
+        m.status = MarketStatus::Active;
+        m.proposed = None;
+        m.proposed_at = 0;
+        emit("resolution_disputed", json!({ "market_id": market_id, "account_id": account_id, "disputed": disputed, "bond": U128(DISPUTE_BOND) }));
+    }
+
+    pub fn get_dispute(&self, market_id: u32) -> Option<DisputeView> {
+        let v = env::storage_read(&dispute_key(market_id))?;
+        let account_id: AccountId = String::from_utf8(v[1..].to_vec()).ok()?.parse().ok()?;
+        Some(DisputeView { account_id, disputed: resolution_from_code(v[0]), bond: U128(DISPUTE_BOND) })
+    }
+
+    pub fn set_challenge_period(&mut self, challenge_period_ns: U64) {
+        self.assert_owner();
+        self.challenge_period_ns = challenge_period_ns.0;
     }
 
     /// Anyone may finalize after the challenge window.
@@ -854,6 +930,19 @@ impl QuireMarket {
         if let Some(acc) = self.accounts.get_mut(account_id) {
             acc.storage_used = acc.storage_used.saturating_sub(bytes).max(ACCOUNT_STORAGE_BYTES);
         }
+    }
+
+    /// Settle a held dispute bond when the jury rules again.
+    fn settle_dispute(&mut self, market_id: u32, new_ruling: Resolution) {
+        let Some(d) = self.get_dispute(market_id) else { return };
+        env::storage_remove(&dispute_key(market_id));
+        let upheld = new_ruling != d.disputed;
+        let creator = self.get_market_creator(market_id);
+        let to = if upheld || !self.accounts.contains_key(&creator) { d.account_id.clone() } else { creator };
+        if let Some(acc) = self.accounts.get_mut(&to) {
+            acc.balance += DISPUTE_BOND;
+        }
+        emit("dispute_settled", json!({ "market_id": market_id, "account_id": d.account_id, "upheld": upheld, "paid_to": to, "bond": U128(DISPUTE_BOND) }));
     }
 
     fn debit(&mut self, account_id: &AccountId, amount: u128) {

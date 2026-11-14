@@ -33,7 +33,7 @@ export async function setupTestApp() {
   const { db, pool } = createDb(TEST_DB_URL);
   await db.execute(sql`truncate table
     article_revisions, encyclopedia_pages, agent_activities, agent_strategies, agent_permissions, evidence_submissions, evidence,
-    ai_inferences, funding_events, funding_requests, trades, positions, market_snapshots, markets, claims, transactions,
+    rulings, ai_inferences, funding_events, funding_requests, trades, positions, market_snapshots, markets, claims, transactions,
     account_balances, wallets, auth_challenges, agents, users, indexer_cursors cascade`);
   await seed(db);
   const cfg = { ...config, DATABASE_URL: TEST_DB_URL, QUIRE_DEV_AUTH: true, QUIRE_EXECUTION_MODE: "SIMULATED" as const };

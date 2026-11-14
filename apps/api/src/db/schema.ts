@@ -418,3 +418,32 @@ export const indexerCursors = pgTable("indexer_cursors", {
   blockHeight: u128("block_height").notNull(),
   updatedAt: updated(),
 });
+
+// ---------- AI jury ----------
+/** One request for a ruling: three jurors vote, and a majority proposes the outcome. */
+export const rulings = pgTable(
+  "rulings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    marketId: uuid("market_id").notNull().references(() => markets.id),
+    requestedBy: text("requested_by"),
+    /** Majority verdict: YES | NO | INVALID | NOT_YET (NOT_YET also covers no majority). */
+    verdict: text("verdict").notNull(),
+    /** PROPOSED | NO_RULING | PROPOSE_FAILED */
+    outcome: text("outcome").notNull(),
+    votes: jsonb("votes").notNull(),
+    evidenceCount: integer("evidence_count").notNull().default(0),
+    durationMs: integer("duration_ms").notNull(),
+    proposalTx: text("proposal_tx"),
+    proposalError: text("proposal_error"),
+    challengeEndsAt: ts("challenge_ends_at"),
+    disputedBy: text("disputed_by"),
+    disputedAt: ts("disputed_at"),
+    disputeTx: text("dispute_tx"),
+    bondSettled: boolean("bond_settled").notNull().default(false),
+    finalizedAt: ts("finalized_at"),
+    finalizeTx: text("finalize_tx"),
+    createdAt: created(),
+  },
+  (t) => [index("rulings_market_idx").on(t.marketId, t.createdAt)],
+);

@@ -5,10 +5,10 @@
  * them into Postgres. Nothing the client says is trusted except the hash to look up.
  * Idempotent: a transaction hash is applied at most once.
  */
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { BuyQuote, Outcome, SellQuote } from "@quire/shared";
 import type { DB } from "../db/client.js";
-import { markets, transactions } from "../db/schema.js";
+import { markets, positions, rulings, transactions } from "../db/schema.js";
 import { applyTrade, pgErrorCode } from "../market/engine.js";
 import { createMarket } from "../market/create.js";
 
@@ -221,4 +221,41 @@ export async function ingestMarketTx(db: DB, ctx: ChainCtx, txHash: string, sign
   });
   void txRow;
   return { alreadyIngested: false as const, market };
+}
+
+/** Mirror settlement events (dispute, finalize, redeem) from a wallet-signed transaction. */
+export async function ingestResolutionTx(db: DB, ctx: ChainCtx, txHash: string, signerId: string) {
+  const tx = await fetchTx(ctx, txHash, signerId);
+  const kinds = ["resolution_proposed", "resolution_disputed", "dispute_settled", "market_resolved", "redeem"];
+  const evs = tx.events.filter((e) => kinds.includes(e.event));
+  if (!evs.length) throw new IngestError("NO_EVENTS", "no settlement events in this transaction");
+  const txRow = await claimTx(db, ctx, tx, "RESOLUTION");
+  if (!txRow) return { alreadyIngested: true, events: evs.map((e) => e.event) };
+  for (const ev of evs) {
+    const d = ev.data;
+    const [m] = await db
+      .select()
+      .from(markets)
+      .where(and(eq(markets.contractId, ctx.contractId), eq(markets.onchainId, Number(d.market_id))));
+    if (!m) continue;
+    const [r] = await db.select().from(rulings).where(eq(rulings.marketId, m.id)).orderBy(desc(rulings.createdAt)).limit(1);
+    if (ev.event === "resolution_proposed") {
+      await db.update(markets).set({ status: "RESOLUTION_PROPOSED", updatedAt: new Date() }).where(eq(markets.id, m.id));
+    } else if (ev.event === "resolution_disputed") {
+      await db.update(markets).set({ status: "ACTIVE", updatedAt: new Date() }).where(eq(markets.id, m.id));
+      if (r) await db.update(rulings).set({ disputedBy: String(d.account_id), disputedAt: new Date(), disputeTx: tx.hash }).where(eq(rulings.id, r.id));
+    } else if (ev.event === "dispute_settled") {
+      await db.update(rulings).set({ bondSettled: true }).where(and(eq(rulings.marketId, m.id), eq(rulings.disputedBy, String(d.account_id))));
+    } else if (ev.event === "market_resolved") {
+      const status = d.resolution === "YES" ? "RESOLVED_YES" : d.resolution === "NO" ? "RESOLVED_NO" : "INVALID";
+      await db.update(markets).set({ status, updatedAt: new Date() }).where(eq(markets.id, m.id));
+      if (r) await db.update(rulings).set({ finalizedAt: new Date(), finalizeTx: tx.hash }).where(eq(rulings.id, r.id));
+    } else if (ev.event === "redeem" && d.pool !== true) {
+      await db
+        .update(positions)
+        .set({ yesShares: 0n, noShares: 0n, yesCost: 0n, noCost: 0n })
+        .where(and(eq(positions.marketId, m.id), eq(positions.traderAccount, String(d.account_id))));
+    }
+  }
+  return { alreadyIngested: false, events: evs.map((e) => e.event) };
 }
