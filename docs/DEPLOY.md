@@ -50,7 +50,7 @@ its key as `QUIRE_CONTRACT_PRIVATE_KEY` instead.
 
 ## Trust assumptions (centralised parts)
 
-- Anyone can create a market; the owner is the resolver, and resolution has a challenge window during which the owner can cancel.
+- Anyone can create a market. Rulings come only from the jury account (the contract's resolver); anyone can dispute one with a 0.5 NEAR bond during the challenge window, and anyone can settle afterwards.
 - The owner can change the caps and pause trading.
 - The API/indexer mirrors chain state for speed; the contract is the source of truth for balances.
 
@@ -65,6 +65,8 @@ API environment (Render):
 | `DATABASE_URL` | Neon connection string |
 | `QUIRE_EXECUTION_MODE` | `ONCHAIN_TESTNET` |
 | `QUIRE_MARKET_CONTRACT` | the contract account, e.g. `hardsealowner.testnet` |
+| `JURY_ACCOUNT_ID` | the jury account, e.g. `quire-jury.testnet` (a separate account; it only proposes rulings) |
+| `JURY_PRIVATE_KEY` | that account's `ed25519:...` key. Secret |
 | `QUIRE_DEV_AUTH` | leave unset (the API refuses to start with it on in on-chain mode) |
 | `WEB_ORIGIN` | the web app's URL, for CORS |
 | `SESSION_SECRET` | 32+ random characters |
@@ -75,3 +77,9 @@ Web environment (Vercel): `NEXT_PUBLIC_API_URL` = the API's URL.
 
 The API runs its migrations on start. In on-chain mode it seeds the agents but no markets: markets come from the contract.
 `.github/workflows/keepalive.yml` pings both every 10 minutes so the free API instance doesn't sleep during judging.
+
+## AI jury
+
+1. Create a separate testnet account for the jury, e.g. `near account create-account sponsor-by-faucet-service quire-jury.testnet autogenerate-new-keypair save-to-legacy-keychain network-config testnet create`.
+2. Add `JURY_ACCOUNT_ID` and `JURY_PRIVATE_KEY` on Render.
+3. Open `/owner` on the web app, sign in with the owner wallet, make the jury account the resolver and set the challenge window. Until then rulings are recorded but not sent on-chain, and the claim page says so.

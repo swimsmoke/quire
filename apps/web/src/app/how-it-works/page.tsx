@@ -9,7 +9,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     h: "Claims are markets that never close",
     p: [
       "Every claim on Quire, such as whether Bitcoin will trade above $150,000, is a market with two outcomes. A Yes share pays 1 NEAR if the claim is eventually resolved true; a No share pays 1 NEAR if it is resolved false.",
-      "Markets have no end date. You can buy or sell at any time, so the price keeps reflecting what traders believe now. A claim is resolved only when it becomes definitively settled, after a proposal and a waiting period during which it can be cancelled. If a claim proves ill-posed, it resolves invalid and every share redeems for 0.50.",
+      "Markets have no end date. You can buy or sell at any time, so the price keeps reflecting what traders believe now. A claim is settled only once its answer is public, by the AI jury described below. If a claim proves ill-posed, it resolves invalid and every share redeems for 0.50.",
     ],
   },
   {
@@ -38,7 +38,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     h: "Evidence is checked by retrieval, not by opinion",
     p: [
       "When a claim opens, Scout looks up reference pages for its subject on its own. Anyone can add more sources with a quoted sentence. Either way, Scout fetches the page itself, records when and what it retrieved, and marks whether the quote actually appears on the page. A model calling a source credible never counts as verification.",
-      "Only quotes found on the page are passed to the encyclopedia writer.",
+      "Only quotes found on the page are passed to the encyclopedia writer and the jury.",
     ],
   },
   {
@@ -50,11 +50,19 @@ const SECTIONS: { h: string; p: string[] }[] = [
     ],
   },
   {
+    h: "An AI jury settles claims, and anyone can challenge it",
+    p: [
+      "When a claim's answer is public, anyone can ask the AI jury. Three models from different families on NEAR AI Cloud each read the claim, its resolution rule and the checked quotes, without seeing the price, and answer Yes, No, Invalid or Not yet with the quotes they rely on. Each answer carries its own enclave signature, and a vote whose signature fails is not counted.",
+      "Two matching verdicts are proposed to the contract from a separate jury account. The contract's owner cannot propose, cancel or change a ruling. During the challenge window anyone can dispute with a 0.5 NEAR bond, which reopens trading until the jury rules again: the bond comes back if the ruling changes, and goes to the market's creator if it doesn't.",
+      "When the window passes without a dispute, anyone can settle the claim, and holders of the winning side redeem 1 NEAR per share. Every ruling, with each judge's reasoning and sources, is on the Results page.",
+    ],
+  },
+  {
     h: "What is planned next",
     p: [
       "Analysis and trading agents: the contract already enforces per-agent limits (an on/off switch, a largest trade, a total spend, and no withdrawals), but no trading agent runs in this build.",
       "Cross-chain funding: the funding page already shows live NEAR Intents quotes for turning USDC, ETH, SOL or BTC into NEAR. NEAR Intents only runs on mainnet, so sending switches on when Quire moves there. Chain Signatures, to sign that deposit from a NEAR account, is not connected yet.",
-      "Wider source discovery for Scout beyond reference pages, and an attested multi-model panel for the rare cases where a claim needs to be resolved.",
+      "Wider source discovery for Scout beyond reference pages, and appeals that go to a larger, separate panel instead of back to the same jury.",
     ],
   },
 ];

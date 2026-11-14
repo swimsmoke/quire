@@ -30,7 +30,7 @@ Quire markets are **perpetual**: no expiry, continuous trading, positions exitab
 - *Liquidity* — collateral backing (`sets`).
 - *Volume* — gross collateral traded.
 
-**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. A resolver proposes, a challenge window must elapse, then anyone finalizes. INVALID pays 0.5 per share (solvent, because each Yes+No pair holds exactly 1 NEAR). After resolution the pool's remaining value returns to whoever seeded the market.
+**Perpetual lifecycle**: `ACTIVE ⇄ PAUSED → RESOLUTION_PROPOSED → RESOLVED(YES|NO|INVALID)`. Resolution is optional and only used when a claim becomes definitively decided or ill-posed. The resolver (the AI jury account) proposes; anyone can `dispute_resolution` inside the challenge window by posting a 0.5 NEAR bond, which returns the market to ACTIVE until the jury rules again (the bond is refunded if the new ruling differs, otherwise paid to the market's creator); once a window passes undisputed, anyone finalizes and holders `redeem`. Disputes are stored under raw storage keys, so the upgrade needed no state migration. INVALID pays 0.5 per share (solvent, because each Yes+No pair holds exactly 1 NEAR). After resolution the pool's remaining value returns to whoever seeded the market.
 
 ## 2. NEAR components in use
 
@@ -96,4 +96,5 @@ inside the API and skip its rate limits through a per-boot internal key.
 - Agents (planned): own account, function-call key only, owner-funded balance, on-chain `enabled` / `max_trade` / `spend_limit`, no withdrawals. Enforced and unit-tested in the contract; no agent runs yet.
 - Open endpoints (evidence submission, generate) are rate-limited; generation is bounded by the update policy.
 - Market creation is open: any registered account seeds a market from its own balance (minimum 0.1 NEAR) and receives the pool back after resolution.
-- Centralised parts: the owner sets caps, can pause, and is the resolver (with a challenge window). The API is a mirror, not a custodian.
+- AI jury (`apps/api/src/jury`, `routes/jury.ts`): three NEAR AI Cloud models from different families each vote YES, NO, INVALID or NOT_YET from the verified evidence, without the price. Each vote is a confidential inference with its signature checked; uncited YES/NO becomes NOT_YET and unsigned votes don't count. Two matching verdicts are sent as `propose_resolution` from `JURY_ACCOUNT_ID` (near-api-js, key in the server's environment). Rulings, votes and timings are stored in `rulings`; `/results`, `/rulings/:id` and `/markets/:slug/ruling` serve them. Disputes, finalization and redemption are signed by users' wallets and mirrored through `/onchain/resolution`.
+- Centralised parts: the owner sets caps, can pause, chooses the jury account and the challenge window (both emit events), and cannot propose or cancel rulings. The jury runs from Quire's API, so new rulings depend on it; disputing, settling and redeeming don't. The API is a mirror, not a custodian.
