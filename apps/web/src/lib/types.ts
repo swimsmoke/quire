@@ -27,6 +27,8 @@ export interface Market {
   lastTradeAt: string | null;
   change24hPpm: number;
   createdAt: string;
+  /** recent Yes prices, oldest first, for small charts */
+  spark?: number[];
 }
 
 export interface Claim {

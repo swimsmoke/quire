@@ -35,7 +35,7 @@ export function NavBar({ simulated, apiOnline }: { simulated: boolean; apiOnline
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b hairline bg-chrome backdrop-blur-xl backdrop-saturate-150">
+      <header className="sticky top-0 z-40 border-b hairline bg-chrome backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-5">
           <Link href="/" aria-label="Quire home" className="-mt-1 transition-opacity hover:opacity-80">
             <Wordmark className="text-[2.35rem]" />
@@ -193,7 +193,7 @@ function TabBar({ path }: { path: string }) {
   ];
   return (
     <nav aria-label="Tabs" className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 md:hidden">
-      <ul className="glass mx-auto flex max-w-[440px] justify-between rounded-full p-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)]">
+      <ul className="frost mx-auto flex max-w-[440px] justify-between rounded-full p-1.5 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.35)]">
         {tabs.map((t) => {
           const on = t.label === "Me" ? path.startsWith("/profile") || path === "/me" : isActive(path, t.href);
           const Icon = t.icon;

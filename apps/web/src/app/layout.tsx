@@ -6,6 +6,9 @@ import "@fontsource/ibm-plex-serif/400.css";
 import "@fontsource/ibm-plex-serif/400-italic.css";
 import "@fontsource/ibm-plex-serif/600.css";
 import "@fontsource/grand-hotel/400.css";
+import "@fontsource/newsreader/500.css";
+import "@fontsource/newsreader/600.css";
+import "@fontsource/newsreader/500-italic.css";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { NavBar } from "@/components/chrome";
@@ -25,7 +28,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f6fa" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f6f2" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };

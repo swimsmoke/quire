@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { MarketList } from "@/components/market-list";
+import { ClaimGrid } from "@/components/claim-card";
 import { category } from "@/lib/format";
 import { PageTitle } from "@/components/section";
 
@@ -24,17 +24,17 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
     return `/markets?${p.toString()}`;
   };
   const chip = (on: boolean) =>
-    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-footnote font-medium transition-colors duration-200 ${on ? "bg-label text-bg" : "bg-fill text-label hover:bg-fill-2"}`;
+    `inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sub font-medium transition-colors duration-200 ${on ? "border-label bg-label text-bg" : "hairline bg-elevated text-label hover:border-label-3"}`;
 
   return (
     <>
       <PageTitle title="Markets" subtitle="Each claim stays open with no closing date. The price is what people and agents currently pay for Yes." />
 
       <form action="/markets" className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="glass flex h-10 flex-1 items-center gap-2 rounded-full px-4 ring-tint/40 transition-shadow focus-within:ring-4">
+        <label className="glass flex h-12 flex-1 items-center gap-2 rounded-full px-5 ring-tint/30 transition-shadow focus-within:ring-4">
           <Search size={16} className="text-label-2" aria-hidden />
           <span className="sr-only">Search claims</span>
-          <input name="q" defaultValue={sp.q} type="search" className="w-full bg-transparent text-body outline-none placeholder:text-label-2" placeholder="Search claims" />
+          <input name="q" defaultValue={sp.q} type="search" className="w-full bg-transparent text-body outline-none placeholder:text-label-2" placeholder="Search topics and claims" />
         </label>
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
         <div className="flex gap-3">
@@ -52,9 +52,9 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
         </div>
       </form>
 
-      <nav aria-label="Categories" className="-mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1">
+      <nav aria-label="Topics" className="-mx-5 mt-5 flex flex-wrap gap-2 px-5 pb-1">
         <Link href={href({ category: undefined })} className={chip(!sp.category)}>
-          All
+          All topics
         </Link>
         {categories.map((c) => (
           <Link key={c.category} href={href({ category: c.category })} className={chip(sp.category === c.category)}>
@@ -64,10 +64,9 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
         ))}
       </nav>
 
-      <div className="mt-6">
-        <MarketList markets={markets} />
+      <div className="mt-8">
+        <ClaimGrid markets={markets} />
       </div>
-      <p className="mt-3 text-footnote text-label-3">Pills show the change in Yes probability over the past 24 hours, in percentage points.</p>
     </>
   );
 }

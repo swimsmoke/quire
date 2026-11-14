@@ -1,10 +1,28 @@
 import type { FastifyInstance } from "fastify";
-import { and, asc, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BPS, parseUnits, type Outcome } from "@quire/shared";
 import { accountBalances, claims, marketSnapshots, markets, positions, trades } from "../db/schema.js";
 import { createMarket } from "../market/create.js";
 import { runKnowledgePipeline } from "./scribe.js";
+
+/** Up to 24 evenly spaced Yes prices per market, oldest first, for the small charts on cards. */
+async function sparklines(app: FastifyInstance, ids: string[]) {
+  const out = new Map<string, number[]>();
+  if (!ids.length) return out;
+  const rows = await app.db
+    .select({ id: marketSnapshots.marketId, p: marketSnapshots.priceYesPpm })
+    .from(marketSnapshots)
+    .where(inArray(marketSnapshots.marketId, ids))
+    .orderBy(marketSnapshots.takenAt);
+  const all = new Map<string, number[]>();
+  for (const r of rows) all.set(r.id, [...(all.get(r.id) ?? []), r.p]);
+  for (const [id, ps] of all) {
+    const n = 24;
+    out.set(id, ps.length <= n ? ps : Array.from({ length: n }, (_, i) => ps[Math.round((i * (ps.length - 1)) / (n - 1))]!));
+  }
+  return out;
+}
 
 const MIN_MARKET_LIQUIDITY = 100_000n; // 0.1 NEAR, same floor as the contract
 const STOP = new Set(["will", "the", "and", "for", "that", "this", "with", "ever", "does", "have", "has", "are", "can", "what", "when", "who", "how", "above", "below", "than", "reach", "from", "into", "going", "its", "was", "been", "being", "any", "more", "least", "before", "after"]);
@@ -102,7 +120,8 @@ export async function marketRoutes(app: FastifyInstance) {
       q.sort === "volume" ? desc(markets.volume) : q.sort === "probability" ? desc(markets.priceYesPpm) : q.sort === "new" ? desc(markets.createdAt) : q.sort === "liquidity" ? desc(markets.sets) : desc(markets.updatedAt);
     const rows = await app.db.select().from(markets).innerJoin(claims, eq(markets.claimId, claims.id)).where(where).orderBy(order).limit(100);
     const stats = await statsByMarket(app);
-    const out = rows.map((r) => present(r.markets, r.claims, stats.get(r.markets.id)));
+    const spark = await sparklines(app, rows.map((r) => r.markets.id));
+    const out = rows.map((r) => ({ ...present(r.markets, r.claims, stats.get(r.markets.id)), spark: spark.get(r.markets.id) ?? [r.markets.priceYesPpm] }));
     if (q.q) {
       // closest wording first, so someone asking a question sees the claim that already covers it
       const ks = keywords(q.q);

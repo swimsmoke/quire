@@ -7,6 +7,7 @@ import { TradeTicket } from "@/components/trade-ticket";
 import { TradeTape } from "@/components/trade-tape";
 import { EncyclopediaArticle, EvidenceList } from "@/components/encyclopedia";
 import { ModeTag } from "@/components/mode";
+import { StatusBadge } from "@/components/claim-card";
 import { AddEvidence, FindSources, GenerateArticle, WritingNotice } from "@/components/knowledge-actions";
 import { ChangePill } from "@/components/market-list";
 import { SectionHeader } from "@/components/section";
@@ -19,9 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: d?.claim.title ?? "Claim" };
 }
 
-export default async function ClaimPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ new?: string }> }) {
+export default async function ClaimPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ new?: string; buy?: string }> }) {
   const { slug } = await params;
-  const { new: isNew } = await searchParams;
+  const { new: isNew, buy } = await searchParams;
   let detail;
   try {
     detail = await api.market(slug);
@@ -45,16 +46,16 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
 
       <header className="pt-4 pb-8">
         <p className="flex flex-wrap items-center gap-2 text-footnote text-label-2">
-          <span>{category(m.category)}</span>
+          <span className="font-semibold">{category(m.category)}</span>
+          <StatusBadge ppm={m.probabilityYesPpm} status={m.status} />
           <ModeTag mode={m.executionMode} />
-          {m.status !== "ACTIVE" && <span className="font-medium text-no">{m.status.toLowerCase().replace(/_/g, " ")}</span>}
           {ency.current?.inference?.signatureVerified === true && (
             <a href="#verification" className="inline-flex h-5 items-center gap-1 rounded-md bg-yes/12 px-2 text-caption font-medium whitespace-nowrap text-yes hover:bg-yes/20">
               <ShieldCheck size={12} aria-hidden /> Encyclopedia verified
             </a>
           )}
         </p>
-        <h1 className="mt-2 max-w-[24ch] text-[2rem] leading-[1.12] font-semibold tracking-[-0.02em] md:text-large">{claim.title}</h1>
+        <h1 className="display mt-3 max-w-[22ch] text-[2.15rem] leading-[1.1] md:text-[3rem]">{claim.title}</h1>
         <p className="mt-3 text-sub text-label-2">
           About {claim.subject}. Open since {new Date(m.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}, with no closing date.
         </p>
@@ -86,7 +87,7 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
 
         <aside className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:hairline lg:pl-10">
           <div className="lg:sticky lg:top-20">
-            <TradeTicket market={m} />
+            <TradeTicket market={m} initialOutcome={buy === "NO" ? "NO" : "YES"} />
           </div>
         </aside>
 

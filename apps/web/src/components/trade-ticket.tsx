@@ -35,11 +35,11 @@ interface Done {
 
 const AMOUNT_RE = /^\d{0,12}(\.\d{0,6})?$/;
 
-export function TradeTicket({ market }: { market: Market }) {
+export function TradeTicket({ market, initialOutcome = "YES" }: { market: Market; initialOutcome?: Outcome }) {
   const router = useRouter();
   const { me, token, balance, refresh, claimTestFunds, onchain, callContract, chain } = useSession();
   const accountId = me?.session.accountId ?? null;
-  const [outcome, setOutcome] = useState<Outcome>("YES");
+  const [outcome, setOutcome] = useState<Outcome>(initialOutcome);
   const [side, setSide] = useState<Side>("BUY");
   const [amount, setAmount] = useState("");
   const [slippage, setSlippage] = useState<"50" | "100" | "300">("100");
