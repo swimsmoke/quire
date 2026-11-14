@@ -1,9 +1,108 @@
 import type { ClaimDraft } from "./types";
 
-/** Claims prepared for the owner to open, each with a suggested opening probability (%). */
-export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] = [
+/** Claims prepared for the owner to open: suggested opening probability (%) and when the answer should be known. */
+export const STARTER_CLAIMS: { id: string; prob: number; by: string; draft: ClaimDraft }[] = [
+  // ---- decided within days or weeks ----
+  {
+    id: "burna-grammy-nomination-2027",
+    prob: 55,
+    by: "16 Nov 2026",
+    draft: {
+      question: "Will Burna Boy be nominated for Best African Music Performance at the 2027 Grammys?",
+      subject: "Grammy Award for Best African Music Performance",
+      category: "culture",
+      description: "Whether a recording by Burna Boy is among the nominees the Recording Academy announces on November 16, 2026.",
+      resolutionCriteria: "The official nominations list on grammy.com includes a Burna Boy recording in Best African Music Performance. No if it does not.",
+    },
+  },
+  {
+    id: "pochettino-man-utd",
+    prob: 60,
+    by: "22 Nov 2026",
+    draft: {
+      question: "Will Mauricio Pochettino be named Manchester United head coach before their match at Liverpool on November 22?",
+      subject: "Mauricio Pochettino",
+      category: "sports",
+      description: "Whether United appoint Pochettino after deciding to part ways with Michael Carrick, before the trip to Anfield.",
+      resolutionCriteria: "Manchester United officially announce Pochettino as head coach (permanent or interim) before kick-off at Anfield on November 22, 2026. No if anyone else is named or no announcement is made by then.",
+    },
+  },
+  {
+    id: "hunger-games-100m-opening",
+    prob: 40,
+    by: "23 Nov 2026",
+    draft: {
+      question: "Will The Hunger Games: Sunrise on the Reaping open above $100 million in North America?",
+      subject: "The Hunger Games: Sunrise on the Reaping (film)",
+      category: "culture",
+      description: "Whether the Haymitch prequel's first weekend in US and Canadian cinemas, from November 20, 2026, takes more than $100 million.",
+      resolutionCriteria: "Box Office Mojo or The Numbers reports a domestic three-day opening weekend above $100 million. No if it is $100 million or less.",
+    },
+  },
+  {
+    id: "cbn-cut-november-2026",
+    prob: 40,
+    by: "24 Nov 2026",
+    draft: {
+      question: "Will the Central Bank of Nigeria cut its policy rate below 23% at its November 2026 meeting?",
+      subject: "Central Bank of Nigeria",
+      category: "economy",
+      description: "Whether the Monetary Policy Committee lowers the Monetary Policy Rate from 23% at its meeting on November 23 and 24, 2026.",
+      resolutionCriteria: "The CBN's communique after the November 2026 MPC meeting sets the MPR below 23%. No if it is held or raised.",
+    },
+  },
+  {
+    id: "btc-80k-nov-30",
+    prob: 30,
+    by: "30 Nov 2026",
+    draft: {
+      question: "Will Bitcoin close above $80,000 on November 30, 2026?",
+      subject: "Bitcoin",
+      category: "crypto",
+      description: "Whether Bitcoin recovers from the low $70,000s to end November above $80,000.",
+      resolutionCriteria: "CoinGecko's daily close for Bitcoin in US dollars on November 30, 2026 (UTC) is above $80,000. No otherwise.",
+    },
+  },
+  {
+    id: "unity-buyout-2026",
+    prob: 35,
+    by: "31 Dec 2026",
+    draft: {
+      question: "Will Unity announce an agreement to be taken private before the end of 2026?",
+      subject: "Unity Technologies",
+      category: "tech",
+      description: "Whether the game-engine maker signs a deal with the Silver Lake and PIF consortium, or any other buyer, after the takeover talks reported on November 5.",
+      resolutionCriteria: "Unity announces a signed definitive agreement to be acquired, in a press release or SEC filing, by December 31, 2026. No if there is no signed agreement by then.",
+    },
+  },
+  {
+    id: "gemini-4-2026",
+    prob: 55,
+    by: "31 Dec 2026",
+    draft: {
+      question: "Will Google release Gemini 4 before the end of 2026?",
+      subject: "Google Gemini",
+      category: "ai",
+      description: "Whether Google makes a model called Gemini 4 available to the public this year, as it has reportedly planned.",
+      resolutionCriteria: "Google announces on its official blog that a model named Gemini 4 is available to users or developers by December 31, 2026. No if not.",
+    },
+  },
+  {
+    id: "rn-bardella-candidate",
+    prob: 50,
+    by: "31 Jan 2027",
+    draft: {
+      question: "Will the National Rally name Jordan Bardella as its 2027 presidential candidate by January 31, 2027?",
+      subject: "Jordan Bardella",
+      category: "politics",
+      description: "Whether the party picks Bardella rather than Marine Le Pen, who is eligible again after her appeal but has said she would not run while wearing an electronic tag.",
+      resolutionCriteria: "The National Rally officially announces Bardella as its candidate by January 31, 2027. No if it names someone else or has named no one by then.",
+    },
+  },
+  // ---- longer-running ----
   {
     id: "spain-world-cup-2026",
+    by: "19 Jul 2026",
     prob: 85,
     draft: {
       question: "Did Spain win the 2026 FIFA World Cup?",
@@ -15,6 +114,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "gta-vi-release-2026",
+    by: "30 Nov 2026",
     prob: 85,
     draft: {
       question: "Will Grand Theft Auto VI be released by November 30, 2026?",
@@ -26,6 +126,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "avengers-doomsday-1-5b",
+    by: "30 Jun 2027",
     prob: 45,
     draft: {
       question: "Will Avengers: Doomsday gross more than $1.5 billion worldwide by June 30, 2027?",
@@ -37,6 +138,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "nigeria-grammy-african-2027",
+    by: "7 Feb 2027",
     prob: 35,
     draft: {
       question: "Will a Nigerian artist win Best African Music Performance at the 2027 Grammy Awards?",
@@ -48,6 +150,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "nigeria-election-jan-16-2027",
+    by: "16 Jan 2027",
     prob: 75,
     draft: {
       question: "Will Nigeria's 2027 presidential election be held on January 16, 2027?",
@@ -59,6 +162,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "france-turnout-2027",
+    by: "18 Apr 2027",
     prob: 45,
     draft: {
       question: "Will turnout in the first round of the 2027 French presidential election be above 75%?",
@@ -70,6 +174,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "arsenal-premier-league-2027",
+    by: "May 2027",
     prob: 35,
     draft: {
       question: "Will Arsenal win the 2026–27 Premier League?",
@@ -81,6 +186,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "nigeria-afcon-2027",
+    by: "17 Jul 2027",
     prob: 15,
     draft: {
       question: "Will Nigeria win the 2027 Africa Cup of Nations?",
@@ -92,6 +198,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "btc-100k-mid-2027",
+    by: "1 Jul 2027",
     prob: 35,
     draft: {
       question: "Will Bitcoin trade above $100,000 before July 1, 2027?",
@@ -103,6 +210,7 @@ export const STARTER_CLAIMS: { id: string; prob: number; draft: ClaimDraft }[] =
   },
   {
     id: "eth-3000-q1-2027",
+    by: "31 Mar 2027",
     prob: 30,
     draft: {
       question: "Will Ether trade above $3,000 before March 31, 2027?",

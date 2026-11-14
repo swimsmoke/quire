@@ -113,7 +113,7 @@ function StarterClaims() {
               <div className="min-w-0 flex-1">
                 <p className="text-sub font-medium">{c.draft.question}</p>
                 <p className="text-footnote text-label-3">
-                  {c.draft.category[0]!.toUpperCase() + c.draft.category.slice(1)}, opens at {c.prob}% Yes
+                  {c.draft.category[0]!.toUpperCase() + c.draft.category.slice(1)}, opens at {c.prob}% Yes, decided by {c.by}
                 </p>
               </div>
               {slug ? (
