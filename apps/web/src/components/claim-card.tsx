@@ -137,7 +137,7 @@ export function ClaimCard({ m }: { m: Market }) {
           <PriceButtons m={m} />
         </div>
         <p className="tabular mt-3 text-caption text-label-3">
-          {fmtNearCompact(m.volume)} NEAR traded, {m.humanTraders + m.agentTraders} traders
+          {fmtNearCompact(m.volume)} NEAR traded, {m.humanTraders + m.agentTraders} {m.humanTraders + m.agentTraders === 1 ? "trader" : "traders"}
           {m.change24hPpm !== 0 && (
             <span className={m.change24hPpm > 0 ? "text-yes" : "text-no"}>
               {" "}
