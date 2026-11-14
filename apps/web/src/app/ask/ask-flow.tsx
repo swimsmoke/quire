@@ -24,14 +24,14 @@ const slugify = (q: string) =>
     .slice(0, 60)
     .replace(/-[^-]*$/, (m) => (m.length < 3 ? "" : m)) || "claim";
 
-export function AskFlow({ initial }: { initial: string }) {
+export function AskFlow({ initial, starter }: { initial: string; starter?: { draft: ClaimDraft; prob: number } }) {
   const router = useRouter();
   const { me, onchain, token, balance, callContract, refresh, connectWallet, claimTestFunds } = useSession();
   const [q, setQ] = useState(initial);
   const [matches, setMatches] = useState<Market[] | null>(null);
-  const [step, setStep] = useState<"search" | "write">("search");
-  const [draft, setDraft] = useState<ClaimDraft>({ question: initial, subject: "", category: "other", description: "", resolutionCriteria: "" });
-  const [prob, setProb] = useState("50");
+  const [step, setStep] = useState<"search" | "write">(starter ? "write" : "search");
+  const [draft, setDraft] = useState<ClaimDraft>(starter?.draft ?? { question: initial, subject: "", category: "other", description: "", resolutionCriteria: "" });
+  const [prob, setProb] = useState(String(starter?.prob ?? 50));
   const [liq, setLiq] = useState("0.2");
   const [drafting, setDrafting] = useState(false);
   const [busy, setBusy] = useState(false);
