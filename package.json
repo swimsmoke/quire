@@ -16,6 +16,7 @@
     "db:migrate": "pnpm --filter @quire/api db:migrate",
     "db:seed": "pnpm --filter @quire/api db:seed",
     "contract:test": "cd contracts && cargo test",
-    "contract:build": "cd contracts && ./build.sh"
+    "contract:build": "cd contracts && ./build.sh",
+    "verify": "pnpm --filter @quire/api verify"
   }
 }

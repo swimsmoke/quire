@@ -1,6 +1,7 @@
 import { ShieldCheck, ShieldQuestion, ChevronDown } from "lucide-react";
 import type { Encyclopedia, Evidence } from "@/lib/types";
 import { dateTime, pct } from "@/lib/format";
+import { BrowserVerify } from "./browser-verify";
 
 const SECTION_ORDER: [string, string][] = [
   ["overview", "Overview"],
@@ -109,6 +110,7 @@ export function VerificationPanel({ cur }: { cur: Current }) {
         <Check ok={inf.signatureVerified} label={inf.signatureVerified == null ? "Signature not available" : verified ? "Signature valid" : "Signature failed"} />
         <Check ok={inf.attestationBindsSigner} label={inf.attestationBindsSigner == null ? "Attestation not checked" : inf.attestationBindsSigner ? "Key attested" : "Key not in report"} />
       </div>
+      {inf.signature && <BrowserVerify inf={{ model: inf.model, requestHash: inf.requestHash, responseHash: inf.responseHash, signatureText: inf.signatureText, signature: inf.signature, signingAddress: inf.signingAddress }} />}
       <details className="group mt-3">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 text-footnote font-medium text-tint">
           Show hashes and signing key

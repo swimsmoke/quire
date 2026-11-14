@@ -91,6 +91,7 @@ export interface Inference {
   requestHash: string | null;
   responseHash: string | null;
   signature: string | null;
+  signatureText: string | null;
   signingAddress: string | null;
   signingAlgo: string | null;
   signatureVerified: boolean | null;

@@ -8,6 +8,8 @@ import { useSession } from "@/lib/session";
 import { fmtNearCompact } from "@/lib/format";
 import type { JuryVote, Ruling, RulingStage } from "@/lib/types";
 import { buttonPrimary, buttonSecondary } from "./ui";
+import { BROWSER_API } from "@/lib/api";
+import { checkSignature } from "@/lib/verify";
 
 /** "deepseek-ai/DeepSeek-V3.1" -> "DeepSeek V3.1" */
 export function shortModel(id: string) {
@@ -70,7 +72,33 @@ function Countdown({ to }: { to: string }) {
   return <span className="tabular-nums">{h > 0 ? `${h}h ${m}m` : `${m}:${String(s).padStart(2, "0")}`}</span>;
 }
 
-function JudgeCard({ v, seat }: { v: JuryVote; seat: number }) {
+function VerifyVote({ rulingId, inferenceId }: { rulingId: string; inferenceId: string }) {
+  const [res, setRes] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (res) return <p className={`mt-2 text-caption ${res.ok ? "text-yes" : "text-no"}`}>{res.text}</p>;
+  return (
+    <button
+      className="mt-2 self-start text-caption font-medium text-tint hover:underline disabled:opacity-60"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const d = (await (await fetch(`${BROWSER_API}/rulings/${rulingId}`)).json()) as { inferences: (Parameters<typeof checkSignature>[0] & { id: string })[] };
+          const inf = d.inferences.find((i) => i.id === inferenceId);
+          setRes(inf ? await checkSignature(inf) : { ok: false, text: "Signature record not found." });
+        } catch {
+          setRes({ ok: false, text: "Couldn't fetch the signature record." });
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {busy ? "Checking…" : "Check the signature yourself"}
+    </button>
+  );
+}
+
+function JudgeCard({ v, seat, rulingId }: { v: JuryVote; seat: number; rulingId: string }) {
   return (
     <li className="flex flex-col rounded-2xl border border-separator bg-elevated p-4">
       <div className="flex items-start justify-between gap-3">
@@ -104,6 +132,7 @@ function JudgeCard({ v, seat }: { v: JuryVote; seat: number }) {
         )}
         {v.confidence != null && ` · ${Math.round(v.confidence * 100)}% sure`}
       </p>
+      {v.inferenceId && v.signatureVerified != null && <VerifyVote rulingId={rulingId} inferenceId={v.inferenceId} />}
     </li>
   );
 }
@@ -135,7 +164,7 @@ export function RulingBody({ r }: { r: Ruling }) {
       </div>
       <ol className="mt-5 grid gap-3 md:grid-cols-3">
         {r.votes.map((v, i) => (
-          <JudgeCard key={i} v={v} seat={i + 1} />
+          <JudgeCard key={i} v={v} seat={i + 1} rulingId={r.id} />
         ))}
       </ol>
     </>
