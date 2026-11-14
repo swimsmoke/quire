@@ -54,6 +54,7 @@ with sync_playwright() as p:
     question = f"Will a volcano erupt in Iceland during the {handle} test?"
     pg.get_by_label("Your question").fill(question)
     expect(pg.get_by_text(re.compile("Nobody has asked this yet|None of these is your question"))).to_be_visible(timeout=8000)
+    pg.get_by_role("button", name="Find the answer").click()  # no NEAR AI key locally: the desk can't answer, so a market can still be opened
     pg.get_by_role("button", name="Write it myself").click()
     pg.get_by_label("What it's about").fill("Volcanism of Iceland")
     pg.get_by_label("Category").select_option("science")

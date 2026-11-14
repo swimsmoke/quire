@@ -24,7 +24,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
   {
     h: "Anyone can ask",
     p: [
-      "Start with a question. Quire first looks for a market that already covers it, so you see what people currently believe. If there isn't one, an AI on NEAR AI Cloud drafts the claim for you: a clear yes or no question, what it means and what would make it Yes. You check the wording and open the market from your own wallet with as little as 0.1 NEAR of liquidity.",
+      "Start with a question. If the answer is already known, Quire answers it like an encyclopedia: Scout pulls passages from Wikipedia, a model on NEAR AI Cloud reads them and replies with the quotes it relied on, and nothing is traded, because Quire only prices questions that are still open. If it is undecided, Quire looks for a market that already covers it, so you see what people currently believe. If there isn't one, an AI on NEAR AI Cloud drafts the claim for you: a clear yes or no question, what it means and what would make it Yes. You check the wording and open the market from your own wallet with as little as 0.1 NEAR of liquidity.",
       "That liquidity sets the opening price and comes back to you, along with your share of the pool, when the claim resolves.",
     ],
   },

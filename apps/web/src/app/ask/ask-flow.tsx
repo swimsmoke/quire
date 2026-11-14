@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowUpRight, BookOpen, ShieldCheck, Sparkles } from "lucide-react";
 import { parseUnits } from "@quire/shared";
 import { ApiError, clientRequest } from "@/lib/api";
 import { chainError, useSession } from "@/lib/session";
@@ -37,6 +37,27 @@ export function AskFlow({ initial, starter }: { initial: string; starter?: { dra
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const seq = useRef(0);
+  const [answer, setAnswer] = useState<{ q: string; loading: boolean; result: AnswerResult | null; error: string | null } | null>(null);
+
+  async function checkAnswer(text = q.trim()) {
+    if (text.length < 8) return;
+    setAnswer({ q: text, loading: true, result: null, error: null });
+    try {
+      const r = await clientRequest<AnswerResult>("/ai/answer", { method: "POST", body: { question: text } });
+      setAnswer({ q: text, loading: false, result: r, error: null });
+    } catch (e) {
+      setAnswer({ q: text, loading: false, result: null, error: e instanceof ApiError ? e.message : "Couldn't reach the answer desk." });
+    }
+  }
+
+  // arriving from the home page with a question: check it straight away
+  useEffect(() => {
+    if (!starter && initial.trim().length >= 8) void checkAnswer(initial.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const current = answer && answer.q === q.trim() ? answer : null;
+  const settled = current?.result?.status === "ANSWERED";
+  const canOpen = !!current && !current.loading && !settled;
 
   // look for claims that already cover the question while the person types
   useEffect(() => {
@@ -137,7 +158,7 @@ export function AskFlow({ initial, starter }: { initial: string; starter?: { dra
     <div className="mx-auto max-w-[760px] pt-12 md:pt-20">
       <h1 className="text-[2.25rem] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[3.25rem]">What do you want to know?</h1>
       <p className="mt-3 max-w-[56ch] text-body text-label-2">
-        Ask it as a yes or no question. If Quire already has a market on it, you&apos;ll see what people currently believe. If not, open one and let the market answer.
+        Ask it as a yes or no question. If the answer is already known, Quire tells you and shows where it comes from. If it&apos;s still undecided, open a market and let traders put a price on it.
       </p>
 
       <div className="glass mt-8 rounded-2xl p-2">
@@ -180,24 +201,37 @@ export function AskFlow({ initial, starter }: { initial: string; starter?: { dra
               <p className="mt-6 text-sub text-label-2">None of these is your question?</p>
             </>
           ) : (
-            <p className="text-sub text-label-2">Nobody has asked this yet. You can be the first.</p>
+            <p className="text-sub text-label-2">There's no market on this yet.</p>
           )}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button onClick={draftWithAi} disabled={drafting || q.trim().length < 8} className={buttonPrimary}>
-              <Sparkles size={16} className="mr-2" aria-hidden />
-              {drafting ? "Drafting on NEAR AI…" : "Draft the market with AI"}
-            </button>
-            <button
-              onClick={() => {
-                setDraft((d) => ({ ...d, question: q.trim() }));
-                setStep("write");
-              }}
-              disabled={q.trim().length < 8}
-              className={buttonSecondary}
-            >
-              Write it myself
-            </button>
-          </div>
+          {!current ? (
+            <div className="mt-4">
+              <button onClick={() => checkAnswer()} disabled={q.trim().length < 8} className={buttonPrimary}>
+                <BookOpen size={16} className="mr-2" aria-hidden />
+                Find the answer
+              </button>
+              <p className="mt-2 text-footnote text-label-3">Quire first checks whether this is already known. Markets are only for questions that are still open.</p>
+            </div>
+          ) : (
+            <AnswerPanel state={current} />
+          )}
+          {canOpen && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button onClick={draftWithAi} disabled={drafting || q.trim().length < 8} className={buttonPrimary}>
+                <Sparkles size={16} className="mr-2" aria-hidden />
+                {drafting ? "Drafting on NEAR AI…" : "Draft the market with AI"}
+              </button>
+              <button
+                onClick={() => {
+                  setDraft((d) => ({ ...d, question: q.trim() }));
+                  setStep("write");
+                }}
+                disabled={q.trim().length < 8}
+                className={buttonSecondary}
+              >
+                Write it myself
+              </button>
+            </div>
+          )}
           {q.trim().length > 0 && q.trim().length < 8 && <p className="mt-2 text-footnote text-label-3">Write a little more first.</p>}
         </section>
       )}
@@ -291,5 +325,63 @@ export function AskFlow({ initial, starter }: { initial: string; starter?: { dra
         </form>
       )}
     </div>
+  );
+}
+
+interface AnswerResult {
+  status: "ANSWERED" | "OPEN" | "UNKNOWN";
+  verdict: "YES" | "NO" | null;
+  answer: string;
+  sources: { key: string; title: string; url: string; quote: string }[];
+  model: string;
+  signatureVerified: boolean | null;
+}
+
+/** The encyclopedia's reply: a settled answer with its sources, or why the question is still open. */
+function AnswerPanel({ state }: { state: { loading: boolean; result: AnswerResult | null; error: string | null } }) {
+  if (state.loading)
+    return (
+      <div role="status" className="card mt-5 p-6">
+        <p className="text-sub font-medium">Looking it up…</p>
+        <p className="mt-1 text-footnote text-label-2">Scout is reading the sources and a model on NEAR AI Cloud is checking whether they settle it. This takes a few seconds.</p>
+        <div className="mt-4 space-y-2">
+          <div className="skeleton h-4 w-full" />
+          <div className="skeleton h-4 w-4/5" />
+          <div className="skeleton h-4 w-3/5" />
+        </div>
+      </div>
+    );
+  if (state.error || !state.result)
+    return <p className="mt-5 text-sub text-label-2">{state.error ?? "No answer came back."} You can still open a market if this is undecided.</p>;
+  const r = state.result;
+  const head =
+    r.status === "ANSWERED" ? (r.verdict === "YES" ? "Already known: Yes" : r.verdict === "NO" ? "Already known: No" : "Already known") : r.status === "OPEN" ? "Not decided yet." : "The sources don't settle this.";
+  const tone = r.status === "ANSWERED" ? (r.verdict === "NO" ? "text-no" : "text-yes") : r.status === "OPEN" ? "text-amber" : "text-label-2";
+  return (
+    <section aria-live="polite" className="card anim-pop mt-5 overflow-hidden">
+      <div className="p-6 sm:p-7">
+        <p className={`display text-[1.6rem] leading-tight ${tone}`}>{head}</p>
+        <p className="mt-3 font-serif text-[1.05rem] leading-relaxed text-label">{r.answer}</p>
+        {r.sources.length > 0 && (
+          <ol className="mt-5 space-y-3 border-t hairline pt-4">
+            {r.sources.map((s) => (
+              <li key={s.key} className="text-footnote">
+                <blockquote className="border-l-2 border-tint/40 pl-3 font-serif text-sub text-label-2">{s.quote}</blockquote>
+                <a href={s.url} target="_blank" rel="noreferrer" className="mt-1 inline-block pl-3.5 font-medium text-tint hover:underline">
+                  {s.title}, Wikipedia
+                </a>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t hairline bg-bg-2/50 px-6 py-3 text-caption text-label-2 sm:px-7">
+        <span className="inline-flex items-center gap-1.5">
+          {r.signatureVerified && <ShieldCheck size={14} className="text-yes" aria-hidden />}
+          Answered by {r.model.split("/").pop()} on NEAR AI Cloud{r.signatureVerified ? ", enclave signature verified" : ""}
+        </span>
+        <span>{r.status === "ANSWERED" ? "Settled questions aren't traded on Quire." : r.status === "OPEN" ? "Still open, so it can be a market." : "If it's still undecided, it can be a market."}</span>
+      </div>
+    </section>
   );
 }

@@ -16,6 +16,7 @@ import { knowledgeRoutes } from "./routes/knowledge.js";
 import { onchainRoutes } from "./routes/onchain.js";
 import { scribeRoutes } from "./routes/scribe.js";
 import { juryRoutes } from "./routes/jury.js";
+import { answerRoutes } from "./routes/answer.js";
 import type { config as Config } from "./config.js";
 
 export type AppConfig = typeof Config;
@@ -105,6 +106,7 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean;
   await app.register(onchainRoutes);
   await app.register(scribeRoutes);
   await app.register(juryRoutes);
+  await app.register(answerRoutes);
   await app.register(intentsRoutes);
   await app.register(profileRoutes);
   return app;
