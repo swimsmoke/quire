@@ -18,7 +18,7 @@ export function AskBox() {
           e.preventDefault();
           if (q.trim()) go(q);
         }}
-        className="glass flex items-center gap-2 rounded-full py-1.5 pr-1.5 pl-5 transition-shadow focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--tint)_18%,transparent),inset_0_1px_0_var(--glass-edge)]"
+        className="glass flex items-center gap-2 rounded-2xl py-2 pr-2 pl-5 transition-shadow focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--tint)_18%,transparent),inset_0_1px_0_var(--glass-edge)]"
       >
         <label htmlFor="home-ask" className="sr-only">
           Ask a yes or no question
@@ -29,13 +29,13 @@ export function AskBox() {
           onChange={(e) => setQ(e.target.value)}
           maxLength={300}
           placeholder="Ask a yes or no question"
-          className="h-11 min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-label-3"
+          className="h-12 min-w-0 flex-1 bg-transparent text-[1.05rem] outline-none placeholder:text-label-3"
         />
-        <button aria-label="Ask" disabled={!q.trim()} className="grid size-11 shrink-0 place-items-center rounded-full bg-label text-bg transition-[transform,opacity] duration-300 ease-glide active:scale-95 disabled:opacity-30">
+        <button aria-label="Ask" disabled={!q.trim()} className="grid size-12 shrink-0 place-items-center rounded-xl bg-tint text-white transition-[transform,opacity] duration-300 ease-glide active:scale-95 disabled:opacity-30">
           <ArrowUp size={18} strokeWidth={2.25} />
         </button>
       </form>
-      <ul className="mt-4 flex flex-wrap justify-center gap-2">
+      <ul className="mt-4 flex flex-wrap gap-2">
         {PROMPTS.map((p) => (
           <li key={p}>
             <button onClick={() => go(p)} className="rounded-full border hairline px-3.5 py-1.5 text-footnote text-label-2 transition-colors hover:border-label-3 hover:text-label">

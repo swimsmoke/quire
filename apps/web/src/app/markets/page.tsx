@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { api } from "@/lib/api";
@@ -27,6 +28,7 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
     `inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sub font-medium transition-colors duration-200 ${on ? "border-label bg-label text-bg" : "hairline bg-elevated text-label hover:border-label-3"}`;
 
   return (
+    <PageIn>
     <>
       <PageTitle title="Markets" subtitle="Each claim stays open with no closing date. The price is what people and agents currently pay for Yes." />
 
@@ -68,5 +70,6 @@ export default async function MarketsPage({ searchParams }: { searchParams: Prom
         <ClaimGrid markets={markets} />
       </div>
     </>
+    </PageIn>
   );
 }

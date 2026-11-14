@@ -24,10 +24,10 @@ export function SessionControl({ onOpenMenu }: { onOpenMenu: () => void }) {
 
   if (me) {
     return (
-      <button onClick={onOpenMenu} className="flex h-9 items-center gap-2 rounded-full pr-0.5 pl-3 text-sub transition-colors hover:bg-fill">
+      <button onClick={onOpenMenu} data-account-button aria-haspopup="menu" className="flex h-9 items-center gap-2 rounded-full pr-0.5 pl-3 text-sub transition-colors hover:bg-fill">
         <span className="tabular hidden text-label-2 sm:inline">{fmtNear(balance)} NEAR</span>
         <Avatar account={me.session.accountId} size={32} />
-        <span className="sr-only">Account {me.session.accountId}, open menu</span>
+        <span className="sr-only">Account {me.session.accountId}, open account menu</span>
       </button>
     );
   }
@@ -45,7 +45,7 @@ export function SessionControl({ onOpenMenu }: { onOpenMenu: () => void }) {
               setOpen(true);
             }
           }}
-          className="h-8 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95"
+          className="h-9 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95"
         >
           Connect wallet
         </button>
@@ -59,7 +59,7 @@ export function SessionControl({ onOpenMenu }: { onOpenMenu: () => void }) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="h-8 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95">
+      <button onClick={() => setOpen(true)} className="h-9 rounded-full bg-label px-4 text-footnote font-semibold text-bg transition-[transform,opacity] duration-200 hover:opacity-85 active:scale-95">
         Sign in
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Sign in">

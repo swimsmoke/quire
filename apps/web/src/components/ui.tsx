@@ -67,7 +67,7 @@ export function Sheet({ open, onClose, title, children, side = "right", bare = f
   }, [open, onClose]);
   if (!mounted || !open) return null;
   return createPortal(
-    <div className={`fixed inset-0 z-50 flex ${side === "left" ? "items-stretch justify-start" : "items-end justify-center sm:items-stretch sm:justify-end"}`} role="presentation">
+    <div data-lenis-prevent className={`fixed inset-0 z-50 flex ${side === "left" ? "items-stretch justify-start" : "items-end justify-center sm:items-stretch sm:justify-end"}`} role="presentation">
       <div className="anim-fade absolute inset-0 bg-scrim" onClick={onClose} aria-hidden />
       <div
         ref={panel}

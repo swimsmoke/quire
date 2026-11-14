@@ -1,97 +1,124 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { TradeTape } from "@/components/trade-tape";
 import { SectionHeader, Steps } from "@/components/section";
 import { pct } from "@/lib/format";
-import { Wordmark } from "@/components/chrome";
 import { AskBox } from "@/components/ask-box";
 import { ClaimTicker } from "@/components/ticker";
-import { ClaimGrid, ContestedHero, pickContested } from "@/components/claim-card";
+import { ClaimGrid, ClosestCall, pickContested } from "@/components/claim-card";
+import { ResultsGrid } from "@/components/jury";
 
 export default async function Home() {
-  const [{ markets }, { activity }] = await Promise.all([
+  const [{ markets }, { activity }, verdicts] = await Promise.all([
     api.markets({ sort: "activity" }).catch(() => ({ markets: [] })),
     api.activity(8).catch(() => ({ activity: [] })),
+    api.results().catch(() => ({ results: [] })),
   ]);
-  const contested = pickContested(markets);
-  const trending = [...markets].filter((m) => m.id !== contested?.id).sort((a, b) => b.tradeCount - a.tradeCount || Number(BigInt(b.volume) - BigInt(a.volume)));
-  const pages = await Promise.all(markets.slice(0, 12).map(async (m) => ({ m, e: await api.encyclopedia(m.slug).catch(() => null) })));
+  const closest = pickContested(markets);
+  const busiest = [...markets].filter((m) => m.id !== closest?.id).sort((a, b) => b.tradeCount - a.tradeCount || Number(BigInt(b.volume) - BigInt(a.volume)));
+  const pages = await Promise.all(markets.slice(0, 8).map(async (m) => ({ m, e: await api.encyclopedia(m.slug).catch(() => null) })));
   const written = pages.filter((p) => p.e?.current);
+  const ruled = verdicts.results.filter((r) => r.outcome !== "NO_RULING").slice(0, 3);
+  const excerpt = (t: string, n: number) => {
+    if (t.length <= n) return t;
+    const cut = t.slice(0, n);
+    const end = cut.lastIndexOf(". ");
+    return end > n * 0.5 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(" "))}…`;
+  };
+  const overview = (c: unknown) => String((c as { overview?: { body?: string } }).overview?.body ?? "");
 
   return (
+    <PageIn>
     <>
-      <section className="flex flex-col items-center pt-14 pb-12 text-center md:pt-24 md:pb-16">
-        <h1>
-          <Wordmark className="graded block px-4 text-[5.5rem] md:text-[9rem]" />
-        </h1>
-        <p className="display mt-1 max-w-[22ch] text-[1.9rem] leading-tight text-label md:text-[2.6rem]">Ask anything. Let the market answer.</p>
-        <p className="mt-4 max-w-[54ch] text-body text-label-2">
-          Every question becomes a market on NEAR that never closes. People trade Yes or No, AI on NEAR AI Cloud writes the encyclopedia page from the price and the evidence, and an AI jury settles it when the answer is in.
-        </p>
-        <div className="mt-8 flex w-full justify-center">
-          <AskBox />
+      <section className="grid items-center gap-12 pt-12 pb-14 md:pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14 lg:pb-20">
+        <div>
+          <h1 className="display rise text-[2.9rem] leading-[1.0] tracking-[-0.025em] sm:text-[4.2rem] lg:text-[4.6rem]">
+            Ask anything.
+            <br />
+            Let the market answer.
+          </h1>
+          <p className="rise mt-6 max-w-[46ch] text-[1.08rem] leading-relaxed text-label-2" style={{ animationDelay: "90ms" }}>
+            Every question on Quire is a market on NEAR that never closes. Traders put a price on the answer, AI inside a hardware enclave writes the page behind it, and a jury of models settles it once the world knows.
+          </p>
+          <div className="rise mt-8" style={{ animationDelay: "180ms" }}>
+            <AskBox />
+          </div>
         </div>
+        {closest && <ClosestCall m={closest} />}
       </section>
 
       <ClaimTicker markets={markets} />
 
-      {contested && (
-        <div className="mx-auto mt-12 max-w-[880px]">
-          <ContestedHero m={contested} />
-        </div>
-      )}
-
-      {trending.length > 0 && (
-        <section aria-labelledby="trending-h" className="mt-16">
-          <SectionHeader id="trending-h" title="Trending claims" action={{ href: "/markets", label: "All markets" }} />
-          <ClaimGrid markets={trending.slice(0, 6)} />
+      {busiest.length > 0 && (
+        <section aria-labelledby="busy-h" className="mt-20">
+          <SectionHeader id="busy-h" title="Busiest claims" action={{ href: "/markets", label: "Every claim" }} />
+          <ClaimGrid markets={busiest.slice(0, 6)} />
         </section>
       )}
 
-      <section aria-labelledby="ency-h" className="mt-16">
-        <SectionHeader id="ency-h" title="Encyclopedia" />
-        <p className="-mt-2 mb-6 max-w-[62ch] text-sub text-label-2">Pages nobody edits by hand. Each is written by AI inside a hardware enclave from the market price and checked sources, and rewritten when they change.</p>
+      <section aria-labelledby="ency-h" className="mt-24">
+        <SectionHeader id="ency-h" title="From the encyclopedia" />
         {written.length ? (
-          <div className="grid gap-5 md:grid-cols-2">
-            {written.slice(0, 4).map(({ m, e }) => {
+          <div className={`grid gap-x-12 gap-y-8 ${written.length > 1 ? "lg:grid-cols-[1.25fr_1fr]" : "max-w-[46rem]"}`}>
+            {(() => {
+              const { m, e } = written[0]!;
               const cur = e!.current!;
-              const verified = cur.inference?.signatureVerified === true;
               return (
-                <Link key={m.id} href={`/markets/${m.slug}#article`} className="card group block p-6 transition-transform duration-300 ease-glide hover:-translate-y-0.5">
-                  <div className="flex items-center justify-between gap-3 text-footnote text-label-2">
-                    <span className="font-semibold">{m.subject}</span>
-                    {verified && (
-                      <span className="inline-flex items-center gap-1 font-medium text-yes">
-                        <ShieldCheck size={14} aria-hidden /> Signed in enclave
+                <Link href={`/markets/${m.slug}#article`} className="reveal group block">
+                  <p className="flex items-center gap-2 text-footnote font-semibold text-label-3">
+                    {m.subject}
+                    {cur.inference?.signatureVerified && (
+                      <span className="inline-flex items-center gap-1 text-yes">
+                        <ShieldCheck size={14} aria-hidden /> signed in an enclave
                       </span>
                     )}
-                  </div>
-                  <p className="display mt-3 text-[1.3rem] leading-snug group-hover:text-tint">{m.question}</p>
-                  <p className="mt-3 line-clamp-3 font-serif text-sub leading-relaxed text-label-2">{String((cur.content as { overview?: { body?: string } }).overview?.body ?? "")}</p>
-                  <p className="mt-4 text-caption text-label-3">
-                    Revision {cur.revisionNumber}, written at {pct(cur.priceYesPpm)} Yes
+                  </p>
+                  <h3 className="display mt-3 text-[2rem] leading-[1.12] transition-colors group-hover:text-tint sm:text-[2.4rem]">{m.question}</h3>
+                  <p className="drop-cap mt-5 font-serif text-[1.06rem] leading-[1.75] text-label-2">{excerpt(overview(cur.content), 460)}</p>
+                  <p className="mt-4 text-footnote text-label-3">
+                    Revision {cur.revisionNumber}, written when Yes stood at {pct(cur.priceYesPpm)}. Read the page
                   </p>
                 </Link>
               );
-            })}
+            })()}
+            {written.length > 1 && <ul className="reveal-stagger divide-y hairline border-y hairline">
+              {written.slice(1, 5).map(({ m, e }) => (
+                <li key={m.id}>
+                  <Link href={`/markets/${m.slug}#article`} className="group block py-5">
+                    <p className="text-caption font-semibold text-label-3">{m.subject}</p>
+                    <p className="display mt-1 text-[1.25rem] leading-snug transition-colors group-hover:text-tint">{m.question}</p>
+                    <p className="mt-2 line-clamp-2 font-serif text-sub leading-relaxed text-label-2">{overview(e!.current!.content)}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>}
           </div>
         ) : (
           <p className="max-w-[62ch] text-sub text-label-2">No pages written yet. Scribe writes one on NEAR AI Cloud as soon as a new claim opens.</p>
         )}
       </section>
 
-      <section aria-labelledby="how-h" className="mt-16">
-        <SectionHeader id="how-h" title="How a claim moves" action={{ href: "/how-it-works", label: "Learn more" }} />
+      {ruled.length > 0 && (
+        <section aria-labelledby="verdicts-h" className="mt-24">
+          <SectionHeader id="verdicts-h" title="Latest verdicts" action={{ href: "/verdicts", label: "All verdicts" }} />
+          <ResultsGrid results={ruled} />
+        </section>
+      )}
+
+      <section aria-labelledby="how-h" className="mt-24">
+        <SectionHeader id="how-h" title="How a claim moves" action={{ href: "/how-it-works", label: "The full story" }} />
         <Steps />
       </section>
 
-      <section aria-labelledby="trades-h" className="mt-16">
-        <SectionHeader id="trades-h" title="Latest trades" />
-        <div className="card px-5 sm:px-6">
+      <section aria-labelledby="trades-h" className="mt-24">
+        <SectionHeader id="trades-h" title="On the tape" />
+        <div className="reveal card px-5 sm:px-6">
           <TradeTape trades={activity} showMarket empty="No trades yet. The first one sets the tape running." />
         </div>
       </section>
     </>
+    </PageIn>
   );
 }

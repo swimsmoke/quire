@@ -296,8 +296,8 @@ export function JuryPanel({ slug, initial, cooldownS, juryReady, onchainId }: { 
         {!juryReady && !r && <span className="text-footnote text-label-2">The jury needs NEAR AI Cloud, which is not configured on this server.</span>}
         {juryReady && cooldownS > 0 && (!r || r.stage === "NO_RULING") && <span className="text-footnote text-label-2">The jury can be asked again in {Math.ceil(cooldownS / 60)} min.</span>}
         {r && r.outcome !== "NO_RULING" && (
-          <Link href="/results" className="ml-auto text-footnote font-medium text-tint">
-            All results
+          <Link href="/verdicts" className="ml-auto text-footnote font-medium text-tint">
+            All verdicts
           </Link>
         )}
       </div>

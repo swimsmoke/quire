@@ -1,0 +1,17 @@
+name: keep-warm
+
+# Render's free tier sleeps after 15 idle minutes, and the next visitor waits
+# for it to wake. A light request every 10 minutes keeps the API awake while
+# the hackathon is being judged.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl -fsS -m 90 https://quire-api-0tkm.onrender.com/health > /dev/null && echo awake
+      - run: curl -fsS -m 60 -o /dev/null https://quire-gamma.vercel.app/ && echo web ok

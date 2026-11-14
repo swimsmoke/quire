@@ -3,7 +3,7 @@
 #   python apps/web/e2e/trade_flow.py
 # Covers: simulated sign-in sheet, test funds, quick amounts, live quote, review sheet,
 # confirm, filled state, chart scrubbing, theme toggle persistence, light/dark screenshots,
-# asking a question (existing claim found, new market opened), the menu, profile and funding page.
+# asking a question (existing claim found, new market opened), the account menu, profile and funding page.
 import os, re, uuid
 from playwright.sync_api import sync_playwright, expect
 
@@ -36,10 +36,10 @@ with sync_playwright() as p:
     pg.mouse.move(box["x"] + 5, box["y"] + 5); pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=6)
     expect(pg.get_by_text(re.compile("Yes probability at")).first).to_be_visible()
 
-    pg.get_by_role("button", name="Open menu", exact=True).click()
-    expect(pg.get_by_role("dialog", name="Menu")).to_be_visible(); pg.wait_for_timeout(600)  # let the drawer finish sliding in
-    toggle = pg.get_by_role("button", name=re.compile("^Theme:"))
-    toggle.click(); toggle.click()  # dark (default) -> system -> light
+    # Theme: two states, remembered across reloads
+    pg.locator("header").get_by_role("button", name="Switch to dark mode").click(); pg.wait_for_timeout(900)
+    pg.reload(); assert pg.evaluate("document.documentElement.dataset.theme") == "dark"
+    pg.locator("header").get_by_role("button", name="Switch to light mode").click(); pg.wait_for_timeout(900)
     pg.reload(); assert pg.evaluate("document.documentElement.dataset.theme") == "light"
 
     pg.goto(BASE + "/portfolio"); expect(pg.get_by_text("Will an open-weights AI model").first).to_be_visible()
@@ -65,9 +65,9 @@ with sync_playwright() as p:
     pg.screenshot(path=f"{OUT}/new-claim.png")
     pg.goto(BASE + "/leaderboard"); expect(pg.get_by_role("table")).to_be_visible()
 
-    # Profile: reached from the menu, shows this account's trade
-    pg.get_by_role("button", name="Open menu", exact=True).click()
-    pg.get_by_role("navigation", name="Menu").get_by_role("link", name="Profile").click()
+    # Profile: reached from the account menu under your avatar, shows this account's trade
+    pg.locator("[data-account-button]").click()
+    pg.get_by_role("menuitem", name="Your profile").click()
     pg.wait_for_url(re.compile(r"/profile/"), timeout=8000)
     expect(pg.get_by_text("Total profit/loss")).to_be_visible()
     pg.get_by_role("tab", name=re.compile("Activity")).click()

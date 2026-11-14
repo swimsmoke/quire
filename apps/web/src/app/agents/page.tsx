@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { BookOpenText, ChartNoAxesCombined, Scale, Search } from "lucide-react";
 import { api } from "@/lib/api";
@@ -37,6 +38,7 @@ export default async function AgentsPage() {
   const activity = await Promise.all(agents.map((a) => api.agentActivity(a.slug).then((r) => r.activity.slice(0, 4)).catch(() => [])));
 
   return (
+    <PageIn>
     <>
       <PageTitle
         title="Agents"
@@ -123,5 +125,6 @@ export default async function AgentsPage() {
         })}
       </div>
     </>
+    </PageIn>
   );
 }

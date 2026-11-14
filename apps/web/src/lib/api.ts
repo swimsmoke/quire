@@ -14,8 +14,9 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string): Promise<T> {
-  const r = await fetch(`${SERVER_API}${path}`, { cache: "no-store" });
+/** `fresh` seconds: how long a response may be reused across visitors. 0 means always ask the API. */
+async function get<T>(path: string, fresh = 0): Promise<T> {
+  const r = await fetch(`${SERVER_API}${path}`, fresh > 0 ? { next: { revalidate: fresh } } : { cache: "no-store" });
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
     throw new ApiError(r.status, body.error ?? "HTTP_ERROR", body.message ?? r.statusText);
@@ -24,24 +25,24 @@ async function get<T>(path: string): Promise<T> {
 }
 
 export const api = {
-  health: () => get<Health>("/health"),
+  health: () => get<Health>("/health", 30),
   markets: (params: { q?: string; category?: string; sort?: string } = {}) => {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
-    return get<{ markets: Market[] }>(`/markets${qs ? `?${qs}` : ""}`);
+    return get<{ markets: Market[] }>(`/markets${qs ? `?${qs}` : ""}`, 5);
   },
-  categories: () => get<{ category: string; count: number }[]>("/categories"),
+  categories: () => get<{ category: string; count: number }[]>("/categories", 60),
   market: (slug: string) => get<{ market: Market; claim: Claim; related: Market[] }>(`/markets/${encodeURIComponent(slug)}`),
   history: (slug: string, range = "all") => get<{ points: HistoryPoint[] }>(`/markets/${encodeURIComponent(slug)}/history?range=${range}`),
   trades: (slug: string, limit = 30) => get<{ trades: Trade[] }>(`/markets/${encodeURIComponent(slug)}/trades?limit=${limit}`),
   encyclopedia: (slug: string) => get<Encyclopedia>(`/markets/${encodeURIComponent(slug)}/encyclopedia`),
   evidence: (slug: string) => get<{ evidence: Evidence[] }>(`/markets/${encodeURIComponent(slug)}/evidence`),
   marketAgentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/markets/${encodeURIComponent(slug)}/agent-activity`),
-  activity: (limit = 12) => get<{ activity: Trade[] }>(`/activity?limit=${limit}`),
-  agents: () => get<{ agents: Agent[] }>("/agents"),
-  leaderboard: () => get<{ leaderboard: LeaderRow[] }>("/leaderboard"),
+  activity: (limit = 12) => get<{ activity: Trade[] }>(`/activity?limit=${limit}`, 5),
+  agents: () => get<{ agents: Agent[] }>("/agents", 60),
+  leaderboard: () => get<{ leaderboard: LeaderRow[] }>("/leaderboard", 15),
   profile: (account: string) => get<Profile>(`/profile/${encodeURIComponent(account)}`),
   ruling: (slug: string) => get<{ ruling: Ruling | null; cooldownS: number; juryReady: boolean }>(`/markets/${encodeURIComponent(slug)}/ruling`),
-  results: () => get<{ results: Ruling[]; counts: { total: number; settled: number } }>("/results"),
+  results: () => get<{ results: Ruling[]; counts: { total: number; settled: number } }>("/results", 10),
   rulingDetail: (id: string) => get<Ruling & { inferences: RulingInference[] }>(`/rulings/${encodeURIComponent(id)}`),
   agentActivity: (slug: string) => get<{ activity: AgentActivity[] }>(`/agents/${encodeURIComponent(slug)}/activity`),
 };

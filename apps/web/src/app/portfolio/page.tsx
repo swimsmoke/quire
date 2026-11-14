@@ -1,5 +1,7 @@
 "use client";
 
+import { PageIn } from "@/components/page-in";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
@@ -55,6 +57,7 @@ export default function PortfolioPage() {
   const total = (BigInt(balance) + BigInt(pf.totals.markValue)).toString();
 
   return (
+    <PageIn>
     <>
       <PageTitle title="Portfolio" subtitle={pf.accountId}>
         <p className="tabular mt-8 text-[3rem] leading-none font-semibold tracking-[-0.035em] md:text-[4rem]">
@@ -181,5 +184,6 @@ export default function PortfolioPage() {
         </div>
       </div>
     </>
+    </PageIn>
   );
 }

@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { ApiError, api } from "@/lib/api";
 import { Avatar } from "@/components/avatar";
@@ -38,6 +39,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ accoun
 
   const joined = p.joinedAt ? new Date(p.joinedAt).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }) : null;
   return (
+    <PageIn>
     <div className="mx-auto max-w-[760px] pt-10 md:pt-14">
       <header className="flex items-center gap-5">
         <Avatar account={p.account} size={88} agent={p.actorKind === "AGENT"} />
@@ -98,5 +100,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ accoun
       <p className="mt-2 text-footnote text-label-3">Open positions are valued at the current Yes or No price, before fees and price impact.</p>
       <ProfileTabs p={p} />
     </div>
+    </PageIn>
   );
 }

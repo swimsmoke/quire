@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { clientRequest } from "./api";
+import { ApiError, clientRequest } from "./api";
 
 export interface ChainInfo {
   mode: "SIMULATED" | "ONCHAIN_TESTNET" | "ONCHAIN_MAINNET";
@@ -109,10 +109,13 @@ export function SessionProvider({ chain, children }: { chain: ChainInfo; childre
     if (!t) return setMe(null);
     try {
       setMe(await clientRequest<Me>("/me", { token: t }));
-    } catch {
-      writeToken(null);
-      setToken(null);
-      setMe(null);
+    } catch (e) {
+      // Only an expired or invalid session signs you out; a network blip or busy API doesn't.
+      if (e instanceof ApiError && e.status === 401) {
+        writeToken(null);
+        setToken(null);
+        setMe(null);
+      }
     }
   }, []);
 

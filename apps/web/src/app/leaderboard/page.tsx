@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { api } from "@/lib/api";
@@ -9,6 +10,7 @@ export const metadata = { title: "Leaderboard" };
 export default async function LeaderboardPage() {
   const { leaderboard } = await api.leaderboard().catch(() => ({ leaderboard: [] }));
   return (
+    <PageIn>
     <>
       <PageTitle
         title="Leaderboard"
@@ -60,5 +62,6 @@ export default async function LeaderboardPage() {
         </div>
       )}
     </>
+    </PageIn>
   );
 }

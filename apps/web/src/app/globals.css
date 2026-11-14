@@ -5,64 +5,72 @@
 
 :root {
   color-scheme: light;
-  --bg: #f7f6f2; /* warm paper */
-  --bg-2: #efede8; /* inputs and wells */
-  --elevated: #ffffff; /* cards, drawers */
-  --label: #15161a;
-  --label-2: #5b5e66;
-  --label-3: #8d9098;
-  --separator: rgba(21, 22, 26, 0.08);
-  --fill: rgba(21, 22, 26, 0.04);
-  --fill-2: rgba(21, 22, 26, 0.075);
-  --tint: #3046c5; /* ink indigo */
-  --tint-press: #2536a3;
+  /* Ledger paper: cool white pages, ink, and the logo's Yes green and No rust. */
+  --bg: #f2f3f6;
+  --bg-2: #e8eaef;
+  --elevated: #ffffff;
+  --label: #10131b;
+  --label-2: #4f5667;
+  --label-3: #858b9b;
+  --separator: rgba(16, 19, 27, 0.085);
+  --fill: rgba(16, 19, 27, 0.04);
+  --fill-2: rgba(16, 19, 27, 0.075);
+  --tint: #2f45d0; /* ultramarine ink */
+  --tint-press: #2436b0;
   --violet: #6d4bf0;
   --on-accent: #ffffff;
-  --yes: #2d8a5e; /* jade */
-  --no: #c4502e; /* rust */
-  --amber: #b7791f;
-  --sim: #9a6a00;
-  --scrim: rgba(8, 9, 12, 0.35);
-  --chrome: rgba(247, 246, 242, 0.86);
+  --yes: #12805c;
+  --no: #c24e1b;
+  --amber: #a16a0a;
+  --sim: #8f6200;
+  --scrim: rgba(8, 10, 16, 0.38);
+  --chrome: rgba(242, 243, 246, 0.82);
   --glass: #ffffff;
   --glass-edge: rgba(255, 255, 255, 0.9);
-  --card-shadow: 0 1px 2px rgba(21, 22, 26, 0.04), 0 14px 34px -20px rgba(21, 22, 26, 0.22);
-  --glow-a: rgba(48, 70, 197, 0.09);
-  --glow-b: rgba(109, 75, 240, 0.07);
-  --glow-c: rgba(45, 138, 94, 0.07);
+  --card-shadow: 0 1px 1px rgba(16, 19, 27, 0.04), 0 10px 30px -18px rgba(16, 19, 27, 0.25);
+  --card-lift: 0 1px 1px rgba(16, 19, 27, 0.05), 0 22px 44px -22px rgba(16, 19, 27, 0.32);
+  --rule: rgba(47, 69, 208, 0.06); /* ledger lines */
+  --margin-rule: rgba(194, 78, 27, 0.22);
+  --glow-a: rgba(47, 69, 208, 0.1);
+  --glow-b: rgba(18, 128, 92, 0.07);
+  --glow-c: rgba(194, 78, 27, 0.05);
   --grain: 0;
-  --shadow-sheet: -24px 0 64px -24px rgba(8, 9, 12, 0.28), 0 0 0 1px rgba(13, 15, 20, 0.06);
+  --shadow-sheet: -24px 0 64px -24px rgba(8, 10, 16, 0.28), 0 0 0 1px rgba(16, 19, 27, 0.06);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #000000;
-  --bg-2: #0e0f14;
-  --elevated: #111319;
-  --label: #f1f2f6;
-  --label-2: #9ea4b4;
-  --label-3: #5c6272;
-  --separator: rgba(241, 242, 246, 0.09);
-  --fill: rgba(241, 242, 246, 0.055);
-  --fill-2: rgba(241, 242, 246, 0.1);
-  --tint: #97a3ff;
-  --tint-press: #b0b9ff;
-  --amber: #e0a43c;
+  /* Ink: the same pages at night. */
+  --bg: #080a10;
+  --bg-2: #10131c;
+  --elevated: #10131b;
+  --label: #eceef4;
+  --label-2: #a3a9b9;
+  --label-3: #646b7d;
+  --separator: rgba(236, 238, 244, 0.085);
+  --fill: rgba(236, 238, 244, 0.05);
+  --fill-2: rgba(236, 238, 244, 0.095);
+  --tint: #94a1ff;
+  --tint-press: #adb7ff;
   --violet: #a48bff;
-  --on-accent: #05060a;
+  --on-accent: #070910;
   --yes: #3fcf98;
   --no: #ff8d5c;
+  --amber: #e5ad48;
   --sim: #e0b341;
-  --scrim: rgba(0, 0, 0, 0.6);
-  --chrome: rgba(0, 0, 0, 0.55);
-  --glass: #0f1117;
-  --card-shadow: 0 0 0 1px rgba(241, 242, 246, 0.02), 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  --scrim: rgba(0, 0, 0, 0.62);
+  --chrome: rgba(8, 10, 16, 0.72);
+  --glass: #10131b;
   --glass-edge: rgba(255, 255, 255, 0.07);
-  --glow-a: rgba(64, 86, 230, 0.32);
-  --glow-b: rgba(124, 82, 255, 0.24);
-  --glow-c: rgba(30, 170, 120, 0.14);
-  --grain: 0.04;
-  --shadow-sheet: -24px 0 64px -24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(241, 242, 246, 0.08);
+  --card-shadow: 0 0 0 1px rgba(236, 238, 244, 0.02), 0 18px 40px -26px rgba(0, 0, 0, 0.95);
+  --card-lift: 0 0 0 1px rgba(236, 238, 244, 0.05), 0 26px 50px -24px rgba(0, 0, 0, 1);
+  --rule: rgba(148, 161, 255, 0.06);
+  --margin-rule: rgba(255, 141, 92, 0.2);
+  --glow-a: rgba(80, 100, 255, 0.2);
+  --glow-b: rgba(63, 207, 152, 0.09);
+  --glow-c: rgba(255, 141, 92, 0.06);
+  --grain: 0.035;
+  --shadow-sheet: -24px 0 64px -24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(236, 238, 244, 0.08);
 }
 
 @theme inline {
@@ -247,34 +255,42 @@
   animation: check 0.5s 0.1s var(--ease-ios) both;
 }
 
-/* Colour grading: a slow field of light behind every page, plus fine grain. */
+/* Behind the top of every page: faint ledger lines and a margin rule, lit softly from above. */
 .aurora {
   position: absolute;
   inset: 0 0 auto;
-  height: 980px;
+  height: 900px;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 70% at 12% 0%, var(--glow-a), transparent 70%),
-    radial-gradient(50% 60% at 92% 0%, var(--glow-b), transparent 70%),
-    radial-gradient(60% 50% at 55% 85%, var(--glow-c), transparent 75%);
+    radial-gradient(55% 60% at 18% 0%, var(--glow-a), transparent 70%),
+    radial-gradient(45% 50% at 88% 8%, var(--glow-b), transparent 70%),
+    repeating-linear-gradient(to bottom, transparent 0 35px, var(--rule) 35px 36px);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.7) 30%, transparent 85%);
+}
+/* the notebook's margin line, just outside the text column on wide screens */
+.aurora::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 600px - 0.5rem);
+  width: 1px;
+  background: var(--margin-rule);
+}
+@media (max-width: 1279px) {
+  .aurora::after {
+    display: none;
+  }
 }
 .grain {
   position: absolute;
   inset: 0 0 auto;
-  height: 980px;
+  height: 900px;
   z-index: -1;
   pointer-events: none;
   opacity: var(--grain);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@keyframes aurora-drift {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(3vw, 4vh, 0) scale(1.08);
-  }
 }
 
 @utility glass {
@@ -285,8 +301,23 @@
 @utility card {
   background: var(--elevated);
   border: 1px solid var(--separator);
-  border-radius: 1.5rem;
+  border-radius: 1.25rem;
   box-shadow: var(--card-shadow);
+}
+/* a card you can open: lifts toward you on hover */
+@utility card-link {
+  transition:
+    transform 0.5s var(--ease-glide),
+    box-shadow 0.5s var(--ease-glide),
+    border-color 0.3s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--card-lift);
+    border-color: color-mix(in oklab, var(--tint) 22%, var(--separator));
+  }
+  &:active {
+    transform: translateY(-1px) scale(0.995);
+  }
 }
 @utility frost {
   background: var(--chrome);
@@ -358,3 +389,165 @@
 }
 .jury-seat { animation: jury-seat 1.35s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .jury-seat { animation: none; } }
+
+/* ---------- page transitions (React <ViewTransition> in app/template.tsx) ---------- */
+/* The whole page doesn't crossfade; only the content does, so the header and tabs stay put. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(site-tabs) {
+  animation: none;
+  z-index: 50;
+}
+::view-transition-old(.page-out) {
+  animation: 160ms var(--ease-ios) both page-leave;
+}
+::view-transition-new(.page-in) {
+  animation: 420ms var(--ease-glide) 60ms both page-enter;
+}
+::view-transition-old(.skeleton-out) {
+  animation: 140ms ease-out both page-fade-out;
+}
+::view-transition-new(.content-in) {
+  animation: 380ms var(--ease-glide) both page-enter;
+}
+@keyframes page-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(2px);
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(3px);
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- loading skeletons ---------- */
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@utility skeleton {
+  border-radius: 0.6rem;
+  background: linear-gradient(90deg, var(--fill-2) 0%, var(--fill) 40%, var(--fill-2) 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* ---------- scroll ---------- */
+/* Lenis (desktop inertia scrolling) takes over from CSS smooth scrolling when it runs. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Things rise into place as they enter the viewport. Native scroll-driven animation:
+   no JavaScript, and browsers without it simply show everything. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal both linear;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    .reveal-stagger > * {
+      animation: reveal both linear;
+      animation-timeline: view();
+      animation-range: entry 0% entry 85%;
+    }
+    /* The header gains its frosted backing only once the page moves under it. */
+    .site-header {
+      animation: header-settle both linear;
+      animation-timeline: scroll(root);
+      animation-range: 0 90px;
+    }
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes header-settle {
+  from {
+    background-color: transparent;
+    border-color: transparent;
+    backdrop-filter: none;
+  }
+}
+
+/* ---------- the odds ring ---------- */
+@keyframes ring-draw {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}
+@utility ring-arc {
+  animation: ring-draw 1.3s var(--ease-glide) both;
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@utility rise {
+  animation: rise-in 0.9s var(--ease-glide) both;
+}
+
+/* encyclopedia excerpts open like a book page */
+.drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 3.6em;
+  line-height: 0.82;
+  padding: 0.08em 0.1em 0 0;
+  color: var(--label);
+}
+
+/* theme switch: the new theme spreads out in a circle from the toggle */
+html.theme-vt::view-transition-old(root) {
+  animation: none;
+}
+html.theme-vt::view-transition-new(root) {
+  animation: theme-reveal 0.7s var(--ease-glide) both;
+}
+html.theme-vt::view-transition-group(site-header),
+html.theme-vt::view-transition-group(site-tabs) {
+  animation: none;
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--vt-x, 100%) var(--vt-y, 0));
+  }
+  to {
+    clip-path: circle(150vmax at var(--vt-x, 100%) var(--vt-y, 0));
+  }
+}

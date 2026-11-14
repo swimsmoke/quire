@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Bot, ChevronLeft, ChevronRight, ShieldCheck, UserRound } from "lucide-react";
@@ -191,9 +192,11 @@ export default async function ClaimPage({ params, searchParams }: { params: Prom
 
 function Stat({ k, v }: { k: string; v: React.ReactNode }) {
   return (
+    <PageIn>
     <div className="border-b hairline py-3">
       <dt className="text-footnote text-label-2">{k}</dt>
       <dd className="mt-0.5 text-body font-medium">{v}</dd>
     </div>
+    </PageIn>
   );
 }

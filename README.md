@@ -25,7 +25,7 @@ Five things to look at, about five minutes in total:
 
 1. **A claim page** ([Bitcoin](https://quire-gamma.vercel.app/markets/btc-above-150k)): live Yes price from the contract, its chart, and trades from testnet wallets.
 2. **The proof behind the AI text.** Tap **Encyclopedia verified** next to the title, then **Verify the signature in your browser**. Your browser recovers the enclave's signing key from the signature over the exact request and response hashes; you don't have to trust Quire's own check.
-3. **The AI jury.** On any claim, **Settle this claim** asks three models from different families on NEAR AI Cloud to rule from the checked sources. They don't see the price. Two matching verdicts are proposed on-chain from a separate jury account, a 0.5 NEAR bond disputes a ruling, and once the window passes anyone can settle and winners redeem. Every ruling is listed on [Results](https://quire-gamma.vercel.app/results), with each judge's verdict, reasoning, sources and signature.
+3. **The AI jury.** On any claim, **Settle this claim** asks three models from different families on NEAR AI Cloud to rule from the checked sources. They don't see the price. Two matching verdicts are proposed on-chain from a separate jury account, a 0.5 NEAR bond disputes a ruling, and once the window passes anyone can settle and winners redeem. Every ruling is listed on [Verdicts](https://quire-gamma.vercel.app/verdicts), with each judge's verdict, reasoning, sources and signature.
 4. **Check everything from your terminal:** `pnpm install && pnpm verify` re-verifies every encyclopedia and jury signature the live API serves.
 5. **Tests:** 42 contract tests (including disputes and bond settlement), 51 API tests against Postgres, property tests on the market math, and a Playwright walk-through. Commands are under [Try it](#try-it).
 
@@ -35,13 +35,13 @@ Five things to look at, about five minutes in total:
 
 | | |
 |---|---|
-| ![Live encyclopedia revision with its enclave signature check](docs/screenshots/encyclopedia-live.jpg) | **From the live site: proof behind every page.** This is the Bitcoin claim on NEAR testnet. Scribe wrote revision 2 on its own when Yes moved 6.2 points. Under "How this revision was generated" you can see the model, the hashes of the exact request and response, the enclave's signing key, and that the signature and attestation checks passed. |
-| ![Most contested claim and trending claims on the home page](docs/screenshots/home-claims.jpg)<br>**Home.** The most contested claim right now, then trending claims with their recent price line. **Settling.** Every claim page has a jury panel: ask the AI jury, watch three judges rule, then dispute, settle or redeem. Each ruling is listed on [Results](https://quire-gamma.vercel.app/results) with every judge's vote, reasoning, sources, time to decide and payout. |
+| ![Home page in dark mode](docs/screenshots/home-dark.jpg)<br>**Light and dark.** The odds ring is Quire's logo drawn live: green for the chance of Yes, rust for No. | ![Busiest claims with odds rings and price lines](docs/screenshots/home-claims.jpg)<br>**Claims.** Each card shows where the market stands in plain words, its recent price line and one-tap Yes or No. |
+| ![Live encyclopedia revision with its enclave signature check](docs/screenshots/encyclopedia-live.jpg)<br>**From the live site: proof behind every page.** Scribe wrote this revision on its own when Yes moved. The panel shows the model, the request and response hashes, the enclave's signing key, and that the signature and attestation checks passed. | **Settling.** Every claim page has a jury panel: ask the AI jury, watch three judges rule, then dispute, settle or redeem. Each ruling is listed on [Verdicts](https://quire-gamma.vercel.app/verdicts) with every judge's vote, reasoning, sources, time to decide and payout. |
 | ![Ask page finding an existing market](docs/screenshots/ask.jpg)<br>**Ask.** Existing markets show up as you type; if none fits, AI drafts a new one. | ![A market with its chart and trade panel](docs/screenshots/market.jpg)<br>**Trade.** Buy Yes or No; every trade moves the price. |
 | ![A trader's profile with profit chart and positions](docs/screenshots/profile.jpg)<br>**Profiles.** Profit over time, positions, trades and markets opened. | ![Leaderboard ranked by profit](docs/screenshots/leaderboard.jpg)<br>**Leaderboard.** Traders ranked by profit across every claim. |
-| ![Slide-out menu with account and links](docs/screenshots/menu.jpg)<br>**Menu.** Account, profile, leaderboard and cross-chain funding. | ![Home and a market on a phone](docs/screenshots/mobile.jpg)<br>**Phone.** Same app with a bottom tab bar. |
+| ![Account menu under the avatar](docs/screenshots/menu.jpg)<br>**Account.** Your profile, positions, cross-chain funding and sign-out, under your avatar. | ![Home and a market on a phone](docs/screenshots/mobile.jpg)<br>**Phone.** Same app with a bottom tab bar. |
 
-These were captured from a local run in practice mode, so records carry a "Simulated" tag. On the live site they show NEAR testnet.
+Apart from the live encyclopedia shot, these were captured from a local run in practice mode, so records carry a "Simulated" tag. On the live site they show NEAR testnet.
 
 ## Try it
 
@@ -120,7 +120,7 @@ python apps/web/e2e/trade_flow.py  # browser walk-through of the steps above; ne
 | Automatic research and first article for new claims | Live |
 | Trader leaderboard and profiles | Live |
 | AI jury rulings with signed votes, bonded disputes, settlement and redemption | Live on testnet |
-| Results page and `pnpm verify` / in-browser signature checks | Live |
+| Verdicts page and `pnpm verify` / in-browser signature checks | Live |
 | Cross-chain funding quotes via NEAR Intents | Live (quotes only) |
 | Trading and analysis agents | Not running yet. The contract already enforces agent spending limits |
 | Sending through NEAR Intents | With the mainnet launch |

@@ -1,3 +1,4 @@
+import { PageIn } from "@/components/page-in";
 import Link from "next/link";
 import { PageTitle, Steps } from "@/components/section";
 import { buttonPrimary } from "@/components/ui";
@@ -54,7 +55,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
     p: [
       "When a claim's answer is public, anyone can ask the AI jury. Three models from different families on NEAR AI Cloud each read the claim, its resolution rule and the checked quotes, without seeing the price, and answer Yes, No, Invalid or Not yet with the quotes they rely on. Each answer carries its own enclave signature, and a vote whose signature fails is not counted.",
       "Two matching verdicts are proposed to the contract from a separate jury account. The contract's owner cannot propose, cancel or change a ruling. During the challenge window anyone can dispute with a 0.5 NEAR bond, which reopens trading until the jury rules again: the bond comes back if the ruling changes, and goes to the market's creator if it doesn't.",
-      "When the window passes without a dispute, anyone can settle the claim, and holders of the winning side redeem 1 NEAR per share. Every ruling, with each judge's reasoning and sources, is on the Results page.",
+      "When the window passes without a dispute, anyone can settle the claim, and holders of the winning side redeem 1 NEAR per share. Every ruling, with each judge's reasoning and sources, is on the Verdicts page.",
     ],
   },
   {
@@ -69,6 +70,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
 
 export default function HowItWorks() {
   return (
+    <PageIn>
     <>
       <PageTitle title="How it works" subtitle="Quire connects markets, people, evidence and confidential AI. Here is how the pieces fit, in the order a claim moves through them, and what is still planned." />
       <Steps />
@@ -92,5 +94,6 @@ export default function HowItWorks() {
         </Link>
       </p>
     </>
+    </PageIn>
   );
 }

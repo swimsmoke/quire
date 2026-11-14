@@ -68,7 +68,8 @@ export async function buildApp(db: DB, cfg: AppConfig, opts: { logger?: boolean;
   // Background work (research, first articles) calls the API in-process; it carries a per-boot key and skips rate limits.
   const internalKey = randomUUID();
   app.decorate("internalKey", internalKey);
-  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", allowList: (req) => req.headers["x-quire-internal"] === internalKey });
+  // Reads are cheap and the web server fetches on behalf of many visitors; writes carry their own, stricter limits.
+  await app.register(rateLimit, { max: 1200, timeWindow: "1 minute", allowList: (req) => req.headers["x-quire-internal"] === internalKey });
 
   app.setErrorHandler((err, _req, reply) => {
     if (reply.sent) return;
