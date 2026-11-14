@@ -73,3 +73,21 @@ describe("answer desk", () => {
     expect(parseAnswer('{"status":"ANSWERED","verdict":"NO","answer":"No.","citations":["E9"]}', new Set(["E1"])).status).toBe("UNKNOWN");
   });
 });
+
+describe("passage choice", () => {
+  it("keeps the article's opening summary ahead of keyword-heavy trivia", async () => {
+    const { findCandidates, questionQuery } = await import("../src/ai/research.js");
+    expect(questionQuery("Did Spain win the 2026 FIFA World Cup?")).toBe("Spain win the 2026 FIFA World Cup");
+    const extract =
+      "The 2026 FIFA World Cup was the 23rd edition of the tournament, hosted by Canada, Mexico and the United States. Spain won the tournament after beating Argentina in the final.\n== Knockout stage ==\nSpain and France had met at the FIFA World Cup in 2010 and at the 2018 FIFA World Cup, and Spain played France in the 2026 FIFA World Cup semi-final.";
+    const fetchFn = (async (u: unknown) =>
+      String(u).includes("list=search")
+        ? new Response(JSON.stringify({ query: { search: [{ title: "2026 FIFA World Cup" }] } }))
+        : new Response(JSON.stringify({ query: { pages: { "1": { title: "2026 FIFA World Cup", fullurl: "https://en.wikipedia.org/wiki/2026_FIFA_World_Cup", extract } } } }))) as typeof fetch;
+    const c = await findCandidates("Spain win the 2026 FIFA World Cup", "Did Spain win the 2026 FIFA World Cup?", fetchFn, { pages: 1, perPage: 3, lead: 6 });
+    const won = c.findIndex((x) => x.excerpt.startsWith("Spain won the tournament"));
+    const trivia = c.findIndex((x) => x.excerpt.startsWith("Spain and France had met"));
+    expect(won).toBeGreaterThanOrEqual(0);
+    expect(trivia === -1 || won < trivia).toBe(true);
+  });
+});

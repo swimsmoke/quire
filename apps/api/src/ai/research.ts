@@ -46,6 +46,7 @@ export function scoreSentence(s: string, terms: string[]): number {
   if (/\b(19|20)\d{2}\b/.test(s)) score += 1; // a date anchors it in time
   if (/[$€£]|\bper cent\b|%/.test(s)) score += 1; // prices and rates
   if (s.includes("(")) score -= 1; // parenthetical asides often render differently on the page
+  if (/\b(won|wins|win|defeat\w*|beat|champions?|elected|released|announced|launched|acquired|signed|appointed|resigned|died|record)\b/.test(lower)) score += 2; // sentences that report an outcome
   return score;
 }
 
@@ -55,9 +56,14 @@ async function getJson(fetchFn: typeof fetch, url: string) {
   return r.json() as Promise<Record<string, unknown>>;
 }
 
-export async function findCandidates(subject: string, question: string, fetchFn: typeof fetch = fetch, opts = { pages: 3, perPage: 2 }): Promise<Candidate[]> {
+/** "Did Spain win the 2026 FIFA World Cup?" -> "Spain win the 2026 FIFA World Cup" */
+export function questionQuery(q: string) {
+  return q.replace(/^(will|is|does|did|do|can|has|have|had|are|was|were|who|what|when|which)\s+/i, "").replace(/[?]/g, "").trim();
+}
+
+export async function findCandidates(subject: string, question: string, fetchFn: typeof fetch = fetch, opts: { pages: number; perPage: number; lead?: number } = { pages: 3, perPage: 2 }): Promise<Candidate[]> {
   const terms = keyTerms(`${subject} ${question}`);
-  const queries = [...new Set([subject, keyTerms(question).length ? question.replace(/^(will|is|does|can|has|are)\s+/i, "").replace(/[?]/g, "") : subject])];
+  const queries = [...new Set([subject, keyTerms(question).length ? questionQuery(question) : subject])];
   const titles: string[] = [];
   try {
     for (const q of queries) {
@@ -75,8 +81,11 @@ export async function findCandidates(subject: string, question: string, fetchFn:
       };
       const page = Object.values(j.query?.pages ?? {})[0];
       if (!page?.extract || !page.fullurl) continue;
+      // The article's opening section summarises it (who won, what happened); optionally keep it whole.
+      const leadText = page.extract.split(/\n==/)[0] ?? "";
+      const lead = new Set(opts.lead ? sentences(leadText).slice(0, opts.lead) : []);
       const ranked = sentences(page.extract)
-        .map((excerpt) => ({ url: page.fullurl!, title: page.title, excerpt, score: scoreSentence(excerpt, terms) }))
+        .map((excerpt) => ({ url: page.fullurl!, title: page.title, excerpt, score: scoreSentence(excerpt, terms) + (lead.has(excerpt) ? 12 : 0) }))
         .filter((c) => c.score > 0)
         .sort((a, b) => b.score - a.score);
       // a few spares per page, since a sentence that reads differently on the page fails the check

@@ -9,7 +9,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { aiInferences } from "../db/schema.js";
 import { confidentialChat, NearAiError } from "../ai/nearai.js";
-import { findCandidates, keyTerms } from "../ai/research.js";
+import { findCandidates, questionQuery } from "../ai/research.js";
 
 const ANSWER_PROMPT = `You are Quire's encyclopedia desk. A reader asked a question. You get today's date and numbered passages from Wikipedia (E1, E2, ...).
 
@@ -67,9 +67,11 @@ export async function answerRoutes(app: FastifyInstance) {
     if (hit && Date.now() - hit.at < TTL_MS) return { ...hit.result, cached: true };
     if (!app.cfg.NEAR_AI_API_KEY) return reply.code(503).send({ error: "NOT_CONFIGURED", message: "NEAR AI Cloud is not configured on this server." });
 
-    const subject = keyTerms(question).slice(0, 5).join(" ") || question;
-    const found = await findCandidates(subject, question, app.webFetch ?? fetch, { pages: 3, perPage: 2 }).catch(() => []);
-    const passages = found.slice(0, 8).map((c, i) => ({ key: `E${i + 1}`, title: c.title, url: c.url, quote: c.excerpt }));
+    const found = await findCandidates(questionQuery(question), question, app.webFetch ?? fetch, { pages: 3, perPage: 3, lead: 6 }).catch(() => []);
+    const seen = new Set<string>();
+    const passages = found
+      .filter((c) => !seen.has(c.excerpt) && seen.add(c.excerpt))
+      .slice(0, 12).map((c, i) => ({ key: `E${i + 1}`, title: c.title, url: c.url, quote: c.excerpt }));
 
     const cfg = { baseUrl: app.cfg.NEAR_AI_BASE_URL, apiKey: app.cfg.NEAR_AI_API_KEY, model: app.cfg.NEAR_AI_MODEL, fetchFn: app.aiFetch };
     let inf;

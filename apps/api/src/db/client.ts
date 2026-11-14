@@ -6,7 +6,8 @@ export type DB = NodePgDatabase<typeof schema>;
 export type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
 
 export function createDb(url: string): { db: DB; pool: pg.Pool } {
-  const pool = new pg.Pool({ connectionString: url, max: 10 });
+  // Fail fast instead of hanging when the database is waking up or unreachable; callers retry.
+  const pool = new pg.Pool({ connectionString: url, max: 10, connectionTimeoutMillis: 20_000, idleTimeoutMillis: 30_000, keepAlive: true });
   return { db: drizzle(pool, { schema }), pool };
 }
 
